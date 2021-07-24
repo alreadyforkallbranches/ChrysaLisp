@@ -676,33 +676,7 @@ trashes
 r1-r14
 ```
 
-### canvas :lisp_brighter -> gui/canvas/lisp_brighter
-
-```code
-inputs
-r0 = lisp object (ptr)
-r1 = args list object (ptr)
-outputs
-r0 = lisp object (ptr)
-r1 = return value object (ptr)
-trashes
-r1-r14
-```
-
 ### canvas :lisp_create -> gui/canvas/lisp_create
-
-```code
-inputs
-r0 = lisp object (ptr)
-r1 = args list object (ptr)
-outputs
-r0 = lisp object (ptr)
-r1 = return value object (ptr)
-trashes
-r1-r14
-```
-
-### canvas :lisp_darker -> gui/canvas/lisp_darker
 
 ```code
 inputs
@@ -5065,17 +5039,6 @@ trashes
 r1-r8
 ```
 
-### pixmap :brighter -> gui/pixmap/brighter
-
-```code
-inputs
-r1 = color (argb)
-outputs
-r1 = brighter color (argb)
-trashes
-r1-r3
-```
-
 ### pixmap :create -> gui/pixmap/create
 
 ```code
@@ -5086,17 +5049,6 @@ outputs
 r0 = 0 if error, else pixmap object (ptr)
 trashes
 r1-r6
-```
-
-### pixmap :darker -> gui/pixmap/darker
-
-```code
-inputs
-r1 = color (argb)
-outputs
-r1 = darker color (argb)
-trashes
-r1-r3
 ```
 
 ### pixmap :deinit -> gui/pixmap/deinit
@@ -8710,17 +8662,6 @@ r1
 ## vdu
 
 Super Class: view
-
-### vdu :configure -> gui/vdu/configure
-
-```code
-inputs
-r0 = vdu object (ptr)
-outputs
-r0 = vdu object (ptr)
-trashes
-r1-r14
-```
 
 ### vdu :create -> gui/vdu/create
 
