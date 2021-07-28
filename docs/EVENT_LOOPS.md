@@ -7,19 +7,27 @@ are used and why.
 Each task on creation is allocated a main mailbox. You can create more if
 desired but why would you do that ? What advantage is there ?
 
-The first advantage is that it allows you to partition your application and its
-messaging in a way that makes it easier to understand what event just occurred.
-You don't have to rely on some way of typing your messages so you can
-distinguish between them.
+* It allows you to partition your application and its messaging in a way that
+makes it easier to understand what event just occurred. You don't have to rely
+on some way of typing your messages so you can distinguish between them.
 
-A good second reason is that you need, in certain fault tolerant situations, to
-be able to retry an action without needing to worry about any replies that may
-come to you from failed or timed out child tasks.
+* In certain fault tolerant situations, to be able to retry an action without
+needing to worry about any replies that may come to you from failed or timed
+out child tasks.
 
-A third reason is that for a GUI application event loop the GUI process will
-send your application GUI events via the main mailbox and you will need to
-create additional mailboxes in order to keep them separate from your other
-activities.
+* In a GUI application event loop the GUI process will send your application
+GUI events via the main mailbox and you will need to create additional
+mailboxes in order to keep them separate from your other activities.
+
+* Prioritising messages by using an ordered selection list of mailboxes with
+the higher priority messages going to the earlier entries in that selection
+list.
+
+Most applications in ChrysaLisp, like Taos before it, are asynchronous
+distributed state machines. ChrysaLisp provides the tools (tasks, mailboxes and
+messages) for you to create such applications, it does not dictate how you do
+them. "The Tao does not do, but
+nothing is not done !"
 
 ## Allocating and freeing multiple mailboxes
 
@@ -195,7 +203,7 @@ every so often to pump our retry calls. In this case we will be calling a
 method on the Farm library to restart any child tasks that are overdue.
 
 Let's not get bogged down in all the specifics of this application but
-concentrate on what happen when we get the callbacks from the library and how
+concentrate on what happens when we get the callbacks from the library and how
 to send off a job.
 
 ```vdu
@@ -318,8 +326,8 @@ lib/task/farm.inc
 ```
 
 The `:refresh` method scans through the farm and any child task that has an
-outstanding job that is overdue is restarted, ie `(destroy)` and `(create)` are
-called.
+outstanding job that is overdue is restarted, ie. `(destroy)` and `(create)`
+are called.
 
 In this way, the application will have all the jobs processed, any that die for
 whatever reason will be restarted and the outstanding jobs won't be lost.
@@ -387,4 +395,62 @@ mailbox.
 				(+job_z zoom)))
 			(range (dec (* canvas_height canvas_scale)) -1))
 		farm (Farm create destroy (* 2 (length (mail-nodes))))))
+```
+
+## Delayed actions with `(mail-timeout)`
+
+So far we have only used `(mail-timeout)` to pump animation and retry code. But
+we can use it for more than that.
+
+The GUI tooltips use this function to pop up a `tip` bubble for toolbar
+buttons. Properties are set on the application window object that will be used
+by the tooltip code.
+
+This example is from the `apps/bubbles/app.lisp`, Bubbles application:
+
+```vdu
+(enums +select 0
+	(enum main timer tip))
+
+...
+
+(defun tooltips ()
+	(def *window* :tip_mbox (elem +select_tip select))
+	(each (# (def %0 :tip_text %1)) (. main_toolbar :children)
+		'("refresh"))
+	(each (# (def %0 :tip_text %1)) (. style_toolbar :children)
+		'("plain" "grid" "axis")))
+```
+
+We declare an extra selection mailbox to be used by the tip events, create a
+`:tip_mbox` property on the root window and add `:tip_text` properties to each
+of the toolbar buttons.
+
+The `:mouse_enter` method of the Button class uses `(mail-timeout)` to create a
+delayed message to the `:tip_mbox`, ie. our `+select_tip` mailbox. It uses the
+id parameter of the timed mail event to hold the button object id, this is so
+when the event is processed in the event loop of the application we can use
+this to find which button wants the tip shown.
+
+Here is the Button class `:mouse_enter` method:
+
+```vdu
+(defmethod :mouse_enter (this event)
+	; (. button :mouse_enter event) -> button
+	(and (def? :tip_text this) (defq tip_mbox (get :tip_mbox this))
+		(mail-timeout tip_mbox 1000000 (. this :get_id)))
+	this)
+```
+
+As the mouse enters a button instance it tests to see if a `:tip_text` property
+is defined on the instance. If so AND `:tip_mbox` is defined in the UI tree,
+remember we added this to our root window, it creates the timed mail event.
+
+And here is the event loop case in the Bubbles `(main)` function:
+
+```vdu
+((= idx +select_tip)
+	;tip time mail
+	(if (defq view (. *window* :find_id (getf *msg* +mail_timeout_id)))
+		(. view :show_tip)))
 ```
