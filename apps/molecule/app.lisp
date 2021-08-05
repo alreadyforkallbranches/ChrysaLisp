@@ -27,7 +27,7 @@
 		(unzip (split (pii-dirlist p) ",") (list (list) (list))))
 	(sort cmp out))
 
-(defq anti_alias nil timer_rate (/ 1000000 30)
+(defq anti_alias t timer_rate (/ 1000000 30)
 	canvas_width 600 canvas_height 600 canvas_scale (if anti_alias 1 2)
 	*rotx* (f2r 0.0) *roty* (f2r 0.0) *rotz* (f2r 0.0) +focal_dist (f2r 4.0)
 	+near +focal_dist +far (+ +near +real_4) balls (list)
@@ -39,7 +39,7 @@
 			(i2f (/ (logand (>> _ 8) 0xff) 0xff))
 			(i2f (/ (logand _ 0xff) 0xff))))
 		(list +argb_black +argb_white +argb_red +argb_green
-			+argb_blue +argb_cyan +argb_yellow +argb_magenta)))
+			+argb_cyan +argb_blue +argb_yellow +argb_magenta)))
 
 (ui-window *window* ()
 	(ui-title-bar *title* "Molecule" (0xea19 0xea1b 0xea1a) +event_close)
@@ -64,7 +64,7 @@
 (defun tooltips ()
 	(def *window* :tip_mbox (elem +select_tip select))
 	(each (# (def %0 :tip_text %1)) (. main_toolbar :children)
-		'("prev" "next")))
+		'("prev" "next" "auto")))
 
 (defun circle (r)
 	;cached circle generation, quantised to 1/4 pixel
@@ -156,11 +156,12 @@
 					(# (/ (i2r (str-to-num %0)) (const (i2r 65536))))
 				(slice 0 3 line)))
 			(bind '(radius col) (case (elem 3 line)
-				("C" (list (const (i2r (* 60 canvas_scale))) (elem 0 palette)))
-				("H" (list (const (i2r (* 60 canvas_scale))) (elem 1 palette)))
+				("C" (list (const (i2r (* 70 canvas_scale))) (elem 0 palette)))
+				("H" (list (const (i2r (* 25 canvas_scale))) (elem 1 palette)))
 				("O" (list (const (i2r (* 60 canvas_scale))) (elem 2 palette)))
-				("N" (list (const (i2r (* 60 canvas_scale))) (elem 3 palette)))
-				(t (list (const (i2r (* 60 canvas_scale))) (const (fixeds 0.0 0.0 0.0))))))
+				("N" (list (const (i2r (* 65 canvas_scale))) (elem 3 palette)))
+				("F" (list (const (i2r (* 50 canvas_scale))) (elem 4 palette)))
+				(t (list (const (i2r (* 10 canvas_scale))) (const (fixeds 1.0 1.0 0.0))))))
 			(push balls (list (vertex-r x y z) radius col)))
 		(defq min_x (i2r 1000) max_x (i2r -1000)
 			min_y (i2r 1000) max_y (i2r -1000)
