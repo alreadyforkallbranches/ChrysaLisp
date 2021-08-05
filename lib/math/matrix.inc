@@ -2,14 +2,16 @@
 ; math
 ;;;;;;
 
-(import "lib/math/math.inc")
+(import "lib/math/vector.inc")
 
 (defq +real_0 (i2r 0) +real_1 (i2r 1) +real_2 (i2r 2)
 	+real_3 (i2r 3) +real_4 (i2r 4) +real_5 (i2r 5)
 	+real_6 (i2r 6) +real_7 (i2r 7) +real_8 (i2r 8)
 	+real_9 (i2r 9) +real_10 (i2r 10)
 	+real_-1 (i2r -1) +real_-2 (i2r -2) +real_-3 (i2r -3)
-	+real_1/2 (f2r 0.5) +real_1/4 (f2r 0.25) +real_3/4 (f2r 0.75)
+	+real_1/2 (f2r 0.5) +real_1/4 (f2r 0.25) +real_1/8 (f2r 0.125)
+	+real_1/16 (f2r 0.0625) +real_3/4 (f2r 0.75)
+	+real_pi (f2r +fp_pi) +real_2pi (f2r +fp_2pi)
 	+reals_tmp (reals +real_0 +real_0 +real_0 +real_0))
 
 (enums +vertex 0
@@ -17,6 +19,9 @@
 
 (enums +matrix 0
 	(enum r0 r1 r2 r3))
+
+(defun vertex-r (x y z)
+	(reals x y z +real_1))
 
 (defun vertex-f (x y z)
 	(reals (f2r x) (f2r y) (f2r z) +real_1))
@@ -57,12 +62,11 @@
 		(reals +real_0 +real_0 (/ (+ near far) (- near far)) (/ (* +real_2 near far) (- near far)))
 		(reals +real_0 +real_0 +real_-1 +real_0)))
 
-(defun vertex-mul (m vs)
-	(map (lambda (v)
-		(reals (vec-dot (elem +matrix_r0 m) v +reals_tmp)
-			(vec-dot (elem +matrix_r1 m) v +reals_tmp)
-			(vec-dot (elem +matrix_r2 m) v +reals_tmp)
-			(vec-dot (elem +matrix_r3 m) v +reals_tmp))) vs))
+(defun vertex-mul (m v)
+	(reals (vec-dot (elem +matrix_r0 m) v +reals_tmp)
+		(vec-dot (elem +matrix_r1 m) v +reals_tmp)
+		(vec-dot (elem +matrix_r2 m) v +reals_tmp)
+		(vec-dot (elem +matrix_r3 m) v +reals_tmp)))
 
 (defun matrix-mul (ma mb)
 	(defq mar0 (elem +matrix_r0 ma) mar1 (elem +matrix_r1 ma)

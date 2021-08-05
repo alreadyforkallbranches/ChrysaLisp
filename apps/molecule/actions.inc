@@ -5,15 +5,19 @@
 ; actions
 ;;;;;;;;;
 
-(import "./utils.inc")
 (import "./ui.inc")
 
 (defq
 event_map (xmap-kv
+	+event_xrot action-xrot
+	+event_yrot action-yrot
+	+event_zrot action-zrot
+	+event_prev action-prev
+	+event_next action-next
+	+event_auto action-auto
 	+event_close action-close
 	+event_min action-minimise
-	+event_max action-maximise
-	+event_reset action-reset)
+	+event_max action-maximise)
 
 key_map (xmap-kv)
 
