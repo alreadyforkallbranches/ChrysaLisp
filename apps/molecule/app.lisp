@@ -29,7 +29,7 @@
 
 (defq anti_alias t timer_rate (/ 1000000 30)
 	canvas_width 600 canvas_height 600 canvas_scale (if anti_alias 1 2)
-	*rotx* (f2r 0.0) *roty* (f2r 0.0) *rotz* (f2r 0.0) +focal_dist (f2r 4.0)
+	*rotx* +real_0 *roty* +real_0 *rotz* +real_0 +focal_dist +real_4
 	+near +focal_dist +far (+ +near +real_4) balls (list)
 	+canvas_mode (if anti_alias +canvas_flag_antialias 0)
 	*mol_index* 0 *auto_mode* nil *dirty* t
@@ -94,16 +94,13 @@
 		sh (const (* +real_1/2 (i2r (dec (* canvas_height canvas_scale))))))
 	(each (lambda (((x y z w) r c))
 		(task-sleep 0)
-		(defq w (recip w) x (* x w) y (* y w) z (* z w)
-			s (recip (+ z +real_2))
-			r (* r s) r4 (* r +real_1/4) r16 (* r +real_1/16)
+		(defq w (recip w) x (* x w) y (* y w) z (* z w) s (recip (+ z +real_2))
+			r (* r s) r4 (* r +real_1/4) r8 (* r +real_1/8) r16 (* r +real_1/16)
 			sx (* (+ x +real_1) sw) sy (* (+ y +real_1) sh))
 		(fpoly canvas (lighting (vec-scale c 0.5 (const (fixeds 0.0 0.0 0.0))) s)
 			sx sy (circle r))
-		(fpoly canvas (lighting c s)
-			(- sx r16) (- sy r16) (circle (- r r16)))
-		(fpoly canvas +argb_white
-			(- sx r4) (- sy r4) (circle r4))) balls))
+		(fpoly canvas (lighting c s) (- sx r16) (- sy r16) (circle (- r r16)))
+		(fpoly canvas +argb_white (- sx r4) (- sy r4) (circle r8))) balls))
 
 (defun print-verts (balls)
 	(each (lambda (((x y z w) _ _))
@@ -171,14 +168,16 @@
 				min_y (min min_y y) max_y (max max_y y)
 				min_z (min min_z z) max_z (max max_z z))) balls)
 		(defq width_x (- max_x min_x) width_y (- max_y min_y) width_z (- max_z min_z)
-			scale (/ (const (f2r 2.3)) (max width_x width_y width_z)))
+			width_max (max width_x width_y width_z)
+			scale_p (/ (const (f2r 2.3)) width_max)
+			scale_r (/ (const (i2r 13)) width_max))
 		(each (lambda (ball)
-			(bind '((x y z w) _ _) ball)
-			(elem-set +ball_vertex ball (reals
-				(* scale (- x min_x (/ width_x (i2r 2))))
-				(* scale (- y min_y (/ width_y (i2r 2))))
-				(* scale (- z min_z (/ width_z (i2r 2))))
-				w))) balls)))
+			(bind '((x y z _) r _) ball)
+			(elem-set +ball_vertex ball (vertex-r
+				(* scale_p (- x min_x (/ width_x +real_2)))
+				(* scale_p (- y min_y (/ width_y +real_2)))
+				(* scale_p (- z min_z (/ width_z +real_2)))))
+			(elem-set +ball_radius ball (* scale_r r))) balls)))
 
 (defun reset ()
 	(ball-file 0)
@@ -211,8 +210,8 @@
 				(when *auto_mode*
 					(setq *rotx* (% (+ *rotx* (f2r 0.01)) +real_2pi)
 						*roty* (% (+ *roty* (f2r 0.02)) +real_2pi)
-						*rotz* (% (+ *rotz* (f2r 0.03)) +real_2pi))
-					(setq *dirty* t))
+						*rotz* (% (+ *rotz* (f2r 0.03)) +real_2pi)
+						*dirty* t))
 				(when *dirty*
 					(setq *dirty* nil)
 					(render)))
