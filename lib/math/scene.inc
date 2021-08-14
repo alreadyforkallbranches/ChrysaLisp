@@ -7,6 +7,9 @@
 ;module
 (env-push)
 
+(enums +poly 0
+	(enum poly col pos))
+
 (defun circle (r)
 	;cached circle generation, quantised to 1/4 pixel
 	(defq r (* (floor (* (r2f r) 4.0)) 0.25) i (% (logior r) 13)
@@ -14,14 +17,6 @@
 	(cond ((defq i (some (lambda (i) (if (= i r) _)) k)) (elem i p))
 		(t (push k r) (elem -2 (push p (list
 			(path-gen-arc 0.0 0.0 0.0 +fp_2pi r 0.25 (path))))))))
-
-(defun fpoly (canvas col x y _)
-	;draw a polygon on a canvas
-	(.-> canvas (:set_color col) (:fpoly (r2f x) (r2f y) +winding_odd_even _)))
-
-(defun fpoly-zero (canvas col _)
-	;draw a polygon on a canvas
-	(.-> canvas (:set_color col) (:fpoly 0.0 0.0 +winding_odd_even _)))
 
 (defun lighting (alpha col at)
 	;very basic attenuation and diffuse
@@ -37,30 +32,23 @@
 		(const (fixeds 255.0 255.0 255.0)) +fixeds_tmp3))
 	(+ (<< (f2i (* alpha 255.0)) 24) (<< (f2i r) 16) (<< (f2i g) 8) (f2i b)))
 
-(defun sort-verts (verts)
-	(sort (lambda (v1 v2)
-		(if (<= (elem +vec4_w v1) (elem +vec4_w v2)) 1 -1)) verts))
-
-(defun sorted-tris (tris prog_verts)
-	(sorted (lambda (t1 t2)
-		(if (<= (elem +vec4_w (elem (elem +tri_i_v0 t1) prog_verts))
-				(elem +vec4_w (elem (elem +tri_i_v0 t2) prog_verts)))
-			1 -1)) tris))
-
-(defun render-object-verts (canvas size mat4x4_obj mat4x4_proj object)
+(defun render-object-verts (size mat4x4_obj mat4x4_proj object)
 	(defq sp (* +real_1/2 (i2r (dec size)))
-		prog_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts)))
+		proj_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts)))
 	(each (lambda ((x y z w))
 			(defq w (recip w) x (* x w) y (* y w) z (* z w) at (recip (+ z +real_2))
 				r (* (const (f2r 0.02)) sp w) sx (* (+ x +real_1) sp) sy (* (+ y +real_1) sp))
-			(fpoly canvas (lighting 1.0 (const (fixeds 1.0 1.0 1.0)) at) sx sy (circle r)))
-		(sort-verts prog_verts)))
+			(push poly_list (list
+				(circle r)
+				(lighting 1.0 (const (fixeds 1.0 1.0 1.0)) at)
+				(list (r2f sx) (r2f sy) w))))
+		proj_verts))
 
-(defun render-object-tris (canvas size mat4x4_obj mat4x4_proj object)
+(defun render-object-tris (size mat4x4_obj mat4x4_proj object)
 	(defq sp (* +real_1/2 (i2r (dec size)))
 		obj_verts (map (# (mat4x4-vec4-mul mat4x4_obj %0)) (. object :get_verts))
 		obj_norms (map (# (mat4x4-vec3-mul mat4x4_obj %0)) (. object :get_norms))
-		prog_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts))
+		proj_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts))
 		screen_verts (cap (length obj_verts) (list))
 		ats (cap (length obj_verts) (list)))
 	(each (lambda ((x y z w))
@@ -68,15 +56,17 @@
 				sx (* (+ x +real_1) sp) sy (* (+ y +real_1) sp))
 			(push screen_verts (path (r2f sx) (r2f sy)))
 			(push ats at))
-		prog_verts)
+		proj_verts)
 	(each (lambda ((i0 i1 i2 in))
 			(defq v0 (elem i0 obj_verts) v1 (elem i1 obj_verts)
 				v2 (elem i2 obj_verts) n (elem in obj_norms)
 				at (+ (elem i0 ats) (elem i1 ats) (elem i2 ats)))
 			(if (> (vec-dot n v0) +real_0)
-				(fpoly-zero canvas (lighting-at3 1.0 (. object :get_color) at)
-					(list (cat (elem i0 screen_verts) (elem i1 screen_verts) (elem i2 screen_verts))))))
-		(sorted-tris (elem +mesh_tris (. object :get_mesh)) prog_verts)))
+				(push poly_list (list
+					(list (cat (elem i0 screen_verts) (elem i1 screen_verts) (elem i2 screen_verts)))
+					(lighting-at3 1.0 (. object :get_color) at)
+					(list 0.0 0.0 (elem +vec4_w (elem i0 proj_verts)))))))
+		(elem +mesh_tris (. object :get_mesh))))
 
 (defclass Scene-node (&optional name) nil
 	; (Scene-node &optional name) -> scene_node
@@ -193,7 +183,7 @@
 		; (. scene_node :render canvas size left right top bottom near far) -> tris
 		(. main_widget :fill 0)
 		(defq mat4x4_frust (Mat4x4-frustum left right top bottom near far)
-			matrix_stack (list (Mat4x4-unity)))
+			matrix_stack (list (Mat4x4-unity)) poly_list (list))
 		(. scene :walk_nodes
 			(lambda (object children)
 				(push matrix_stack (defq mat4x4_obj (mat4x4-mul
@@ -201,11 +191,15 @@
 				(when (def? :mesh object)
 					(defq mat4x4_proj (mat4x4-mul mat4x4_frust mat4x4_obj))
 					(if mode
-						(render-object-tris canvas size mat4x4_obj mat4x4_proj object)
-						(render-object-verts canvas size mat4x4_obj mat4x4_proj object)))
+						(render-object-tris size mat4x4_obj mat4x4_proj object)
+						(render-object-verts size mat4x4_obj mat4x4_proj object)))
 				nil)
 			(lambda (object children)
 				(pop matrix_stack)))
+		(each (lambda ((poly col (sx sy sz)))
+				(.-> canvas (:set_color col) (:fpoly sx sy +winding_odd_even poly)))
+			(sort (# (if (< (elem +vec3_z (elem +poly_pos %0))
+							(elem +vec3_z (elem +poly_pos %1))) 1 -1)) poly_list))
 		(. main_widget :swap))
 	)
 
