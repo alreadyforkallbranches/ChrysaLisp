@@ -25,10 +25,16 @@
 		(const (fixeds 255.0 255.0 255.0)) +fixeds_tmp3))
 	(+ (<< (f2i (* alpha 255.0)) 24) (<< (f2i r) 16) (<< (f2i g) 8) (f2i b)))
 
-(defun lighting-at3 (alpha col at)
-	;very basic attenuation and diffuse
-	(bind '(r g b) (vec-min (vec-add (vec-scale col (* (r2f at) (const (/ 255.0 3.0))) +fixeds_tmp3)
+(defun lighting-at3 (alpha col at sp)
+	;very basic attenuation, diffuse and specular
+	(bind '(r g b) (vec-min (vec-add (vec-add
+		;attenuation
+		(vec-scale col (* (r2f at) (const (/ 255.0 3.0))) +fixeds_tmp3)
+		;difuse
 		(const (fixeds 32.0 32.0 32.0)) +fixeds_tmp3)
+		;specular
+		(vec-scale (const (fixeds 255.0 255.0 255.0)) (r2f sp) (const (fixeds 0.0 0.0 0.0))) +fixeds_tmp3)
+		;clamp
 		(const (fixeds 255.0 255.0 255.0)) +fixeds_tmp3))
 	(+ (<< (f2i (* alpha 255.0)) 24) (<< (f2i r) 16) (<< (f2i g) 8) (f2i b)))
 
@@ -36,8 +42,8 @@
 	(defq sp (* +real_1/2 (i2r (dec size)))
 		proj_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts)))
 	(each (lambda ((x y z w))
-			(defq w (recip w) x (* x w) y (* y w) z (* z w) at (recip (+ z +real_2))
-				r (* (const (f2r 0.02)) sp w) sx (* (+ x +real_1) sp) sy (* (+ y +real_1) sp))
+			(defq rw (recip w) x (* x rw) y (* y rw) z (* z rw) at (recip (+ z +real_2))
+				r (* (const (f2r 0.02)) sp rw) sx (* (+ x +real_1) sp) sy (* (+ y +real_1) sp))
 			(push poly_list (list
 				(circle r)
 				(lighting 1.0 (const (fixeds 1.0 1.0 1.0)) at)
@@ -58,15 +64,17 @@
 			(push ats at))
 		proj_verts)
 	(each (lambda ((i0 i1 i2 in))
-			(defq v0 (elem i0 obj_verts) v1 (elem i1 obj_verts)
-				v2 (elem i2 obj_verts) n (elem in obj_norms)
-				at (+ (elem i0 ats) (elem i1 ats) (elem i2 ats)))
-			(if (> (vec-dot n v0) +real_0)
+			(defq v0 (elem i0 obj_verts) v1 (elem i1 obj_verts) v2 (elem i2 obj_verts)
+				n (elem in obj_norms))
+			(when (> (vec-dot n v0) +real_0)
+				(defq sp (max +real_0 (vec-dot n (const (reals (f2r 0.55) (f2r 0.55) (f2r -0.55)))))
+					sp (* sp sp sp sp sp sp)
+					at (+ (elem i0 ats) (elem i1 ats) (elem i2 ats)))
 				(push poly_list (list
 					(list (cat (elem i0 screen_verts) (elem i1 screen_verts) (elem i2 screen_verts)))
-					(lighting-at3 1.0 (. object :get_color) at)
+					(lighting-at3 1.0 (. object :get_color) at sp)
 					(list 0.0 0.0 (elem +vec4_w (elem i0 proj_verts)))))))
-		(elem +mesh_tris (. object :get_mesh))))
+		(. object :get_tris)))
 
 (defclass Scene-node (&optional name) nil
 	; (Scene-node &optional name) -> scene_node
@@ -161,15 +169,15 @@
 
 	(defmethod :get_verts (this)
 		; (. scene_node :get_verts) -> verts
-		(elem +mesh_verts (get :mesh this)))
+		(. (get :mesh this) :get_verts))
 
 	(defmethod :get_norms (this)
 		; (. scene_node :get_norms) -> norms
-		(elem +mesh_norms (get :mesh this)))
+		(. (get :mesh this) :get_norms))
 
 	(defmethod :get_tris (this)
 		; (. scene_node :get_tris) -> tris
-		(elem +mesh_tris (get :mesh this)))
+		(. (get :mesh this) :get_tris))
 
 	(defmethod :get_color (this)
 		; (. scene_node :get_color) -> color
@@ -181,7 +189,7 @@
 
 	(defmethod :render (this canvas size left right top bottom near far mode)
 		; (. scene_node :render canvas size left right top bottom near far) -> tris
-		(. main_widget :fill 0)
+		(. canvas :fill 0)
 		(defq mat4x4_frust (Mat4x4-frustum left right top bottom near far)
 			matrix_stack (list (Mat4x4-unity)) poly_list (list))
 		(. scene :walk_nodes
@@ -200,7 +208,7 @@
 				(.-> canvas (:set_color col) (:fpoly sx sy +winding_odd_even poly)))
 			(sort (# (if (< (elem +vec3_z (elem +poly_pos %0))
 							(elem +vec3_z (elem +poly_pos %1))) 1 -1)) poly_list))
-		(. main_widget :swap))
+		(. canvas :swap))
 	)
 
 ;module
