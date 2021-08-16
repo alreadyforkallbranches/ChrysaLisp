@@ -2076,6 +2076,18 @@
 (fixeds [num ...])
 ```
 
+### fixeds-floor
+
+```code
+(fixeds-floor fixeds [fixeds])
+```
+
+### fixeds-frac
+
+```code
+(fixeds-frac fixeds [fixeds])
+```
+
 ### floor
 
 ```code
@@ -2724,16 +2736,10 @@
 (nums-div nums nums [nums])
 ```
 
-### nums-floor
+### nums-dot
 
 ```code
-(nums-floor fixeds [fixeds])
-```
-
-### nums-frac
-
-```code
-(nums-frac fixeds [fixeds])
+(nums-dot nums nums)
 ```
 
 ### nums-max
