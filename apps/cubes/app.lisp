@@ -90,6 +90,25 @@
 (defun dispatch-action (&rest action)
 	(catch (eval action) (progn (print _)(print) t)))
 
+(defun benchmark ()
+	(defun time-in-seconds (_)
+		(str (/ _ 1000000) "." (pad (% _ 1000000) 6 "00000")))
+	(defq tests (list
+			(nums 2 2 2)
+			(fixeds 2.0 2.0 2.0)
+			(reals (f2r 23.069) (f2r 20000.56240) (f2r 819.45098))))
+	(each (lambda (v)
+		(defq then (pii-time))
+		(times 10000000 (nums-dot v v) (nums-dot v v) (nums-dot v v) (nums-dot v v) (nums-dot v v))
+		(prin "Vector: " v " Time: " (time-in-seconds (- (pii-time) then)))(print)) tests)
+	(defq tests '((1 +canvas_flag_antialias) (2 +canvas_flag_antialias)
+		(3 +canvas_flag_antialias) (1 0) (2 0) (3 0)))
+	(each (lambda ((s m))
+		(defq c (Canvas 512 512 s) then (pii-time))
+		(. c :set_canvas_flags m)
+		(times 1000 (. scene :render c (* 512 s) +left +right +top +bottom +near +far t))
+		(prin "Scale: " s " Mode: " m " Time: " (time-in-seconds (- (pii-time) then)))(print)) tests))
+
 (defun main ()
 	(defq select (alloc-select +select_size) *running* t)
 	(bind '(x y w h) (apply view-locate (.-> *window* (:connect +event_layout) :pref_size)))
@@ -98,6 +117,7 @@
 	(gui-add-front (. *window* :change x y w h))
 	(tooltips)
 	(reset)
+;	(benchmark)
 	(mail-timeout (elem +select_timer select) timer_rate 0)
 	(while *running*
 		(defq *msg* (mail-read (elem (defq idx (mail-select select)) select)))
