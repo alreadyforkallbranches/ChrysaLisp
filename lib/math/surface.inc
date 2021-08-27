@@ -13,7 +13,7 @@
 (defun Gridcell (p0 p1 p2 p3 p4 p5 p6 p7 v0 v1 v2 v3 v4 v5 v6 v7)
 	(list p0 p1 p2 p3 p4 p5 p6 p7 v0 v1 v2 v3 v4 v5 v6 v7))
 
-(defq +edge_table '(
+(defq +edge_table ''(
 		0x0   0x109 0x203 0x30a 0x406 0x50f 0x605 0x70c
 		0x80c 0x905 0xa0f 0xb06 0xc0a 0xd03 0xe09 0xf00
 		0x190 0x99  0x393 0x29a 0x596 0x49f 0x795 0x69c
@@ -46,7 +46,7 @@
 		0x69c 0x795 0x49f 0x596 0x29a 0x393 0x99  0x190
 		0xf00 0xe09 0xd03 0xc0a 0xb06 0xa0f 0x905 0x80c
 		0x70c 0x605 0x50f 0x406 0x30a 0x203 0x109 0x0)
-	+tri_table '(
+	+tri_table ''(
 		(())
 		((0 8 3))
 		((0 1 9))
@@ -313,7 +313,7 @@
 		((< (abs (- isolevel valp1)) (const (f2r 0.0001))) p1)
 		((< (abs (- isolevel valp2)) (const (f2r 0.0001))) p2)
 		((< (abs (- valp1 valp2)) (const (f2r 0.0001))) p1)
-		(t  (vec-add p1 (vec-scale (vec-sub p1 p2 +reals_tmp3)
+		(t  (vec-add p1 (vec-scale (vec-sub p2 p1 +reals_tmp3)
 				(/ (- isolevel valp1) (- valp2 valp1)) +reals_tmp3)))))
 
 ;given a grid cell and an isolevel, calculate the triangular
@@ -326,15 +326,15 @@
 	; (iso-surface grid isolevel) -> tris
 	;determine the index into the edge table which
 	;tells us which vertices are inside the surface
-	(defq cubeindex (reduce (lambda (cubeindex b v)
-				(+ cubeindex (if (< (elem v grid) isolevel) b 0)))
+	(defq cubeindex (reduce (lambda (cubeindex (b v))
+				(+ cubeindex (if (<= (elem v grid) isolevel) b 0)))
 			(const (cat (list quote) (list (prebind '(
 			(1 +gridcell_v0) (2 +gridcell_v1)
 			(4 +gridcell_v2) (8 +gridcell_v3)
 			(16 +gridcell_v4) (32 +gridcell_v5)
 			(64 +gridcell_v6) (128 +gridcell_v7)))))) 0))
 	(cond
-		((= (defq cube (elem cubeindex +edge_table) 0)
+		((= (defq cube (elem cubeindex +edge_table)) 0)
 			;cube is entirely in/out of the surface
 			'())
 		(t  ;find the vertices where the surface intersects the cube
@@ -357,9 +357,9 @@
 					(1024 +gridcell_p2 +gridcell_p6 +gridcell_v2 +gridcell_v6)
 					(2048 +gridcell_p3 +gridcell_p7 +gridcell_v3 +gridcell_v7)))))) (list)))
 			;return the triangles
-			(map (lambda ((p0 p1 p2)
-					(list (elem p0 vertlist) (elem p1 vertlist) (elem p2 vertlist))))
-				(elem cubeindex +tri_table))))))
+			(map (lambda ((p0 p1 p2))
+					(list (elem p0 vertlist) (elem p1 vertlist) (elem p2 vertlist)))
+				(elem cubeindex +tri_table)))))
 
 (defclass Iso () nil
 	; (Iso) -> iso
@@ -370,26 +370,26 @@
 		(list (get :width this) (get :height this) (get :depth this)))
 
 	(defmethod :get_scalar (this x y z)
-		; (. iso :get_scalar) -> scalar
+		; (. iso :get_scalar x y z) -> scalar
 		(raise :scalars :width :height :depth)
-		(elem (+ x (* y height) (* z (* width height))) scalars))
+		(elem (+ x (* y width) (* z (* width height))) scalars))
 
 	(defmethod :get_gridcell (this x y z)
 		; (. iso :get_gridcell x y z) -> gridcell
 		(raise :width :height :depth)
 		(defq ix (inc x) iy (inc y) iz (inc z)
-			rx (i2r x) ry (i2r y) rz (i2r z)
-			rix (i2r ix) riy (i2r iy) riz (i2r iz)
-			scale (reals (recip (i2r width)) (recip (i2r height)) (recip (i2r depth))))
+			rx (i2r x) ry (i2r y) rz (i2r z) rix (i2r ix) riy (i2r iy) riz (i2r iz)
+			center (vec-scale (reals (i2r (dec width)) (i2r (dec height)) (i2r (dec depth))) +real_1/2)
+			scale (vec-div (reals +real_2 +real_2 +real_2) (reals (i2r width) (i2r height) (i2r depth))))
 		(Gridcell
-			(vec-mul scale (reals rx ry riz))
-			(vec-mul scale (reals rix ry riz))
-			(vec-mul scale (reals rix ry rz))
-			(vec-mul scale (reals rx ry rz))
-			(vec-mul scale (reals rx riy riz))
-			(vec-mul scale (reals rix riy riz))
-			(vec-mul scale (reals rix riy rz))
-			(vec-mul scale (reals rx riy rz))
+			(vec-mul scale (vec-sub (reals rx ry riz) center))
+			(vec-mul scale (vec-sub (reals rix ry riz) center))
+			(vec-mul scale (vec-sub (reals rix ry rz) center))
+			(vec-mul scale (vec-sub (reals rx ry rz) center))
+			(vec-mul scale (vec-sub (reals rx riy riz) center))
+			(vec-mul scale (vec-sub (reals rix riy riz) center))
+			(vec-mul scale (vec-sub (reals rix riy rz) center))
+			(vec-mul scale (vec-sub (reals rx riy rz) center))
 			(. this :get_scalar x y iz)
 			(. this :get_scalar ix y iz)
 			(. this :get_scalar ix y z)
@@ -398,22 +398,41 @@
 			(. this :get_scalar ix iy iz)
 			(. this :get_scalar ix iy z)
 			(. this :get_scalar x iy z)))
+
+	(defmethod :get_surface (this x y z isolevel)
+		; (. iso :get_surface x y z isolevel) -> triangles
+		(iso-surface (. this :get_gridcell x y z) isolevel))
 	)
 
 (defclass Iso-random (width height depth) (Iso)
 	; (Iso-random) -> iso
-	(defq scalars (list) z -1)
+	(defq width (inc width) height (inc height) depth (inc depth)
+		scalars (cap (* width height depth) (list)) z -1)
 	(while (< (setq z (inc z)) depth)
 		(defq y -1)
 		(while (< (setq y (inc y)) height)
 			(defq x -1)
 			(while (< (setq x (inc x)) width)
-				(push scalars (random (i2r 1))))))
+				(push scalars (f2r (random 1.0))))))
+	(lower :scalars :width :height :depth))
+
+(defclass Iso-sphere (width height depth) (Iso)
+	; (Iso-sphere) -> iso
+	(defq center (vec-scale (reals (i2r width) (i2r height) (i2r depth)) +real_1/2)
+		width (inc width) height (inc height) depth (inc depth) z -1
+		scale (vec-div (reals +real_2 +real_2 +real_2) (reals (i2r width) (i2r height) (i2r depth)))
+		scalars (cap (* width height depth) (list)))
+	(while (< (setq z (inc z)) depth)
+		(defq y -1)
+		(while (< (setq y (inc y)) height)
+			(defq x -1)
+			(while (< (setq x (inc x)) width)
+				(push scalars (vec-length (vec-mul (vec-sub (reals (i2r x) (i2r y) (i2r z)) center) scale))))))
 	(lower :scalars :width :height :depth))
 
 ;module
 (export (penv)
-	iso-surface Gridcell
 	*class_Iso* Iso Iso?
-	*class_Iso-random* Iso-random Iso-random?)
+	*class_Iso-random* Iso-random Iso-random?
+	*class_Iso-sphere* Iso-sphere Iso-sphere?)
 (env-pop)
