@@ -10,9 +10,6 @@
 (defun Tri (i0 i1 i2 in)
 	(list i0 i1 i2 in))
 
-(defun vec-eql (v1 v2)
-	(every = v1 v2))
-
 (defun opt-vectors (vectors)
 	; (opt-vectors vectors) -> (new_vectors vector_map)
 	(defq vec_xmap (xmap 101 (const vec-eql))
@@ -24,13 +21,6 @@
 			(push new_vecs v))
 		(push vec_imap i)) vectors)
 	(list new_vecs vec_imap))
-
-(defun opt-mesh (verts norms tris)
-	; (opt-mesh verts norms tris) -> (verts norms tris)
-	(bind '(new_verts vert_map) (opt-vectors verts))
-	(bind '(new_norms norm_map) (opt-vectors norms))
-	(list new_verts new_norms (map (lambda ((i0 i1 i2 in))
-		(Tri (elem i0 vert_map) (elem i1 vert_map) (elem i2 vert_map) (elem in norm_map))) tris)))
 
 (defclass Mesh () nil
 	; (Mesh) -> mesh
@@ -47,6 +37,15 @@
 	(defmethod :get_tris (this)
 		; (. mesh :get_tris) -> tris
 		(get :tris this))
+
+	(defmethod :optimise (this)
+		; (. mesh :optimise) -> this
+		(raise :verts :norms :tris)
+		(bind '(new_verts vert_map) (opt-vectors verts))
+		(bind '(new_norms norm_map) (opt-vectors norms))
+		(setq verts new_verts norms new_norms tris (map (lambda ((i0 i1 i2 in))
+			(Tri (elem i0 vert_map) (elem i1 vert_map) (elem i2 vert_map) (elem in norm_map))) tris))
+		(lower :verts :norms :tris))
 	)
 
 (defclass Mesh-sphere (radius eps) (Mesh)
@@ -150,10 +149,10 @@
 						(push verts (cat v0) (cat v1) (cat v2))
 						(push norms (vec-norm (apply reals (vec-cross-3d (vec-sub v0 v1) (vec-sub v0 v2))))))
 					(. iso :get_surface x y z isolevel)))))
-	(bind '(verts norms tris) (opt-mesh verts norms tris))
+	(lower :verts :norms :tris)
+	(. this :optimise)
 	(each (# (push %0 +real_1)) verts)
-	(shuffle tris)
-	(lower :verts :norms :tris))
+	(shuffle tris))
 
 ;module
 (export (penv)
