@@ -10,6 +10,10 @@
 (defun Tri (i0 i1 i2 in)
 	(list i0 i1 i2 in))
 
+(defun Normal (p0 p1 p2)
+	(defq n (apply reals (vec-cross-3d (vec-sub v0 v1) (vec-sub v0 v2))))
+	(if (vec-eql n +reals_zero3) +reals_zero3 (vec-norm n)))
+
 (defun opt-vectors (vectors)
 	; (opt-vectors vectors) -> (new_vectors new_indexs)
 	(defq vec_xmap (xmap 101 (const vec-eql))
@@ -26,8 +30,21 @@
 	; (opt-mesh verts norms tris) -> (new_verts new_norms new_tris)
 	(bind '(new_verts vert_map) (opt-vectors verts))
 	(bind '(new_norms norm_map) (opt-vectors norms))
-	(list new_verts new_norms (map (lambda ((i0 i1 i2 in))
-		(Tri (elem i0 vert_map) (elem i1 vert_map) (elem i2 vert_map) (elem in norm_map))) tris)))
+	(defq new_tris (reduce (lambda (tris (i0 i1 i2 in))
+			(if (vec-eql (elem in norms) +reals_zero3) tris
+				(push tris (Tri (elem i0 vert_map) (elem i1 vert_map) (elem i2 vert_map) (elem in norm_map)))))
+			tris (cap (length tris) (list))))
+	(list new_verts new_norms new_tris))
+
+(defun gen-norms (verts tris)
+	; (gen-norms verts tris) -> (norms new_tris)
+	(defq norms (cap (length tris) (list)) new_tris (cap (length tris) (list)))
+	(each (lambda ((i0 i1 i2 _))
+			(defq v0 (elem i0 verts) v1 (elem i1 verts) v2 (elem i2 verts))
+			(push new_tris (Tri i0 i1 i2 (length norms)))
+			(push norms (Normal v0 v1 v2)))
+		tris)
+	(list norms new_tris))
 
 (defclass Mesh () nil
 	; (Mesh) -> mesh
@@ -44,6 +61,12 @@
 	(defmethod :get_tris (this)
 		; (. mesh :get_tris) -> tris
 		(get :tris this))
+
+	(defmethod :normals (this)
+		; (. mesh :normals) -> this
+		(raise :verts :tris)
+		(bind '(norms tris) (gen-norms norms tris))
+		(lower :norms :tris))
 
 	(defmethod :optimise (this)
 		; (. mesh :optimise) -> this
@@ -81,9 +104,9 @@
 				i2 (+ i0 eps2) i3 (+ i1 eps2)
 				v0 (elem i0 verts) v1 (elem i1 verts)
 				v2 (elem i2 verts) v3 (elem i3 verts))
-			(push tris (Tri i0 i2 i1 (length norms)))
-			(push tris (Tri i1 i2 i3 (length norms)))
-			(push norms (vec-norm (apply reals (vec-cross-3d (vec-sub v0 v1) (vec-sub v0 v2)))))
+			(push tris (Tri i0 i1 i2 (length norms)))
+			(push tris (Tri i2 i1 i3 (length norms)))
+			(push norms (Normal v0 v1 v2))
 			(setq x (inc x)))
 		(setq y (inc y)))
 	;gen norms and tris for end cap fans
@@ -91,12 +114,12 @@
 	(while (< x eps2)
 		(defq i0 (+ x y) i1 (+ (% (inc x) eps2) y) i2 (dec (length verts))
 			v0 (elem i0 verts) v1 (elem i1 verts) v2 (elem i2 verts))
-		(push tris (Tri i0 i2 i1 (length norms)))
-		(push norms (vec-norm (apply reals (vec-cross-3d (vec-sub v0 v1) (vec-sub v0 v2)))))
-		(defq i0 x i1 (% (inc x) eps2) i2 (- (length verts) 2)
+		(push tris (Tri i0 i1 i2 (length norms)))
+		(push norms (Normal v0 v1 v2))
+		(defq i0 (% (inc x) eps2) i1 x i2 (- (length verts) 2)
 			v0 (elem i0 verts) v1 (elem i1 verts) v2 (elem i2 verts))
 		(push tris (Tri i0 i1 i2 (length norms)))
-		(push norms (vec-norm (apply reals (vec-cross-3d (vec-sub v2 v1) (vec-sub v2 v0)))))
+		(push norms (Normal v0 v1 v2))
 		(setq x (inc x)))
 	(each (# (push %0 +real_1)) verts)
 	(shuffle tris)
@@ -132,9 +155,9 @@
 				i3 (+ (% (inc x) eps2) (* (% (inc y) eps) eps2))
 				v0 (elem i0 verts) v1 (elem i1 verts)
 				v2 (elem i2 verts) v3 (elem i3 verts))
-			(push tris (Tri i0 i2 i1 (length norms)))
-			(push tris (Tri i1 i2 i3 (length norms)))
-			(push norms (vec-norm (apply reals (vec-cross-3d (vec-sub v0 v1) (vec-sub v0 v2)))))
+			(push tris (Tri i2 i0 i1 (length norms)))
+			(push tris (Tri i2 i1 i3 (length norms)))
+			(push norms (Normal v0 v1 v2))
 			(setq x (inc x)))
 		(setq y (inc y)))
 	(each (# (push %0 +real_1)) verts)
@@ -156,7 +179,7 @@
 						(defq i (length verts))
 						(push tris (Tri i (inc i) (+ i 2) (length norms)))
 						(push verts (cat v0) (cat v1) (cat v2))
-						(push norms (vec-norm (apply reals (vec-cross-3d (vec-sub v0 v1) (vec-sub v0 v2))))))
+						(push norms (Normal v0 v1 v2)))
 					(. iso :get_surface x y z isolevel)))))
 	(bind '(verts norms tris) (opt-mesh verts norms tris))
 	(each (# (push %0 +real_1)) verts)
