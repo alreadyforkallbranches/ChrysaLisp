@@ -646,14 +646,10 @@
 	(when (eql (elem 0 _) "-")
 		(setq m -1 _ (slice 1 -1 _)))
 	(when (> (length _) 1)
-		(defq i (elem 1 _))
-		(cond
-			((eql i "x") (setq b 16 _ (slice 2 -1 _)))
-			((eql i "o") (setq b 8 _ (slice 2 -1 _)))
-			((eql i "b") (setq b 2 _ (slice 2 -1 _)))
-			((eql i "X") (setq b 16 _ (slice 2 -1 _)))
-			((eql i "O") (setq b 8 _ (slice 2 -1 _)))
-			((eql i "B") (setq b 2 _ (slice 2 -1 _)))))
+		(case (elem 1 _)
+			(("x" "X") (setq b 16 _ (slice 2 -1 _)))
+			(("o" "O") (setq b 8 _ (slice 2 -1 _)))
+			(("b" "B") (setq b 2 _ (slice 2 -1 _)))))
 	(each (lambda (_) (if (eql _ ".")
 			(setq f 1)
 			(setq n (+ (* n b) (char-to-num _)) f (* f b)))) _)
@@ -694,10 +690,12 @@
 	(while (> c (length f)) (setq f (cat f f)))
 	(cat (slice 0 c f) v))
 
-(defun shuffled (_a &optional _l _h)
-	; (shuffled list [start end]) -> list
-	(setd _l 0 _h (length _a))
-	(shuffle (slice _l _h _a)))
+(defun swap (_ _1 _2)
+	; (swap list index index)
+	(when (/= _1 _2)
+		(defq _t (elem _1 _))
+		(elem-set _1 _ (elem _2 _))
+		(elem-set _2 _ _t)))
 
 (defun shuffle (_a &optional _l _h)
 	; (shuffle list [start end]) -> list
@@ -705,10 +703,10 @@
 	(each! _h _l (lambda (x)
 		(swap _a _ (random (inc _)))) (list _a)) _a)
 
-(defun sorted (_f _a &optional _l _h)
-	; (sorted fcmp list [start end]) -> list
+(defun shuffled (_a &optional _l _h)
+	; (shuffled list [start end]) -> list
 	(setd _l 0 _h (length _a))
-	(sort _f (slice _l _h _a)))
+	(shuffle (slice _l _h _a)))
 
 (defun sort (_f _a &optional _l _h)
 	; (sort fcmp list [start end]) -> list
@@ -719,12 +717,10 @@
 			(defq _p (pivot _f _a _l _h))
 			(push (push _q _l _p) (inc _p) _h))) _a)
 
-(defun swap (_ _1 _2)
-	; (swap list index index)
-	(when (/= _1 _2)
-		(defq _t (elem _1 _))
-		(elem-set _1 _ (elem _2 _))
-		(elem-set _2 _ _t)))
+(defun sorted (_f _a &optional _l _h)
+	; (sorted fcmp list [start end]) -> list
+	(setd _l 0 _h (length _a))
+	(sort _f (slice _l _h _a)))
 
 (defmacro get-ubyte (s o)
 	; (get-ubyte str index) -> num

@@ -312,6 +312,24 @@
 (. canvas :fpoly x y winding_mode paths) -> canvas
 ```
 
+### canvas :ftri
+
+```code
+(. canvas :ftri tri) -> canvas
+```
+
+### canvas :get_clip
+
+```code
+(. canvas :get_clip) -> (cx cy cx1 cy1)
+```
+
+### canvas :get_color
+
+```code
+(. canvas :get_color) -> argb
+```
+
 ### canvas :next_frame
 
 ```code
@@ -364,6 +382,12 @@
 
 ```code
 (. dictionary :find_matches prefix) -> (word ...)
+```
+
+### dictionary :find_matches_case
+
+```code
+(. dictionary :find_matches_case prefix) -> (word ...)
 ```
 
 ### dictionary :insert_word
@@ -633,7 +657,7 @@
 ### syntax :set_colors
 
 ```code
-(. syntax :set_colors xmap) -> syntax
+(. syntax :set_colors fmap) -> syntax
 ```
 
 ### syntax :set_state
@@ -1564,6 +1588,12 @@
 
 ```code
 (canvas-from-argb32 pixel type)
+```
+
+### canvas-ftri
+
+```code
+(canvas-ftri canvas path)
 ```
 
 ### canvas-info

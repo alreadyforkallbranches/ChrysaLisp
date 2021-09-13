@@ -18,7 +18,7 @@
 	;very basic attenuation and diffuse
 	(bind '(r g b) (vec-min (vec-add
 		;attenuation
-		(vec-scale col (* (r2f at) 255.0) (const (fixeds 0.0 0.0 0.0)))
+		(vec-scale col (* (r2f at) 255.0) (const (cat +fixeds_tmp3)))
 		;difuse
 		(vec-scale col 64.0 +fixeds_tmp3))
 		(const (fixeds 255.0 255.0 255.0)) +fixeds_tmp3))
@@ -28,18 +28,19 @@
 	;very basic attenuation, diffuse and specular
 	(bind '(r g b) (vec-min (vec-add (vec-add
 		;attenuation
-		(vec-scale col (* (r2f at) (const (/ 255.0 3.0))) (const (fixeds 0.0 0.0 0.0)))
+		(vec-scale col (* (r2f at) (const (/ 255.0 3.0))) (const (cat +fixeds_tmp3)))
 		;difuse
-		(vec-scale col 64.0 (const (fixeds 0.0 0.0 0.0))) (const (fixeds 0.0 0.0 0.0)))
+		(vec-scale col 64.0 (const (cat +fixeds_tmp3))) (const (cat +fixeds_tmp3)))
 		;specular
-		(vec-scale (const (fixeds 255.0 255.0 255.0)) (r2f sp) (const (fixeds 0.0 0.0 0.0))) +fixeds_tmp3)
+		(vec-scale (const (fixeds 255.0 255.0 255.0)) (r2f sp) (const (cat +fixeds_tmp3))) +fixeds_tmp3)
 		;clamp
 		(const (fixeds 255.0 255.0 255.0)) +fixeds_tmp3))
 	(+ (<< (f2i (* alpha 255.0)) 24) (<< (f2i r) 16) (<< (f2i g) 8) (f2i b)))
 
 (defun render-object-verts (size mat4x4_proj object)
 	(defq sp (* +real_1/2 (i2r (dec size)))
-		proj_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts)))
+		proj_verts (map (# (mat4x4-vec4-mul mat4x4_proj %0)) (. object :get_verts))
+		col (. object :get_color))
 	(each (lambda ((x y z w))
 			(defq rw (recip w) z (* z rw))
 			(when (<= +real_-1 z +real_1)
@@ -47,8 +48,8 @@
 					sx (* (+ x +real_1) sp) sy (* (+ y +real_1) sp))
 				(push (elem (r2i (* (+ z +real_1) (const (i2r 50)))) poly_buckets) (list
 					(circle r)
-					(lighting 1.0 (const (fixeds 1.0 1.0 1.0)) at)
-					(list (r2f sx) (r2f sy))))))
+					(lighting 1.0 col at)
+					(r2f sx) (r2f sy)))))
 		proj_verts))
 
 (defun render-object-tris (size mat4x4_obj mat4x4_proj object)
@@ -78,8 +79,7 @@
 					bucket (r2i (* (+ z0 +real_1) (const (i2r 50)))))
 				(push (elem bucket poly_buckets) (list
 					(cat (elem i0 screen_verts) (elem i1 screen_verts) (elem i2 screen_verts))
-					(lighting-at3 1.0 col at sp)
-					'(0.0 0.0)))))
+					(lighting-at3 0.9 col at sp)))))
 		(. object :get_tris)))
 
 (defclass Scene-node (&optional name) nil
@@ -217,8 +217,11 @@
 				(pop matrix_stack)))
 		(each-rev (lambda (path_list)
 				(while (defq p (pop path_list))
-					(bind '(p col (sx sy)) p)
-					(.-> canvas (:set_color col) (:fpoly sx sy +winding_odd_even (list p))))
+					(bind '(p col &optional sx sy) p)
+					(. canvas :set_color col)
+					(if sx
+						(. canvas :fpoly sx sy +winding_odd_even (list p))
+						(. canvas :ftri p)))
 				(task-slice))
 			poly_buckets)
 		(. canvas :swap))
