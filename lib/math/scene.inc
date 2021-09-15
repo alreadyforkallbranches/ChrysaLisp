@@ -167,7 +167,7 @@
 		(get :imatrix this))
 
 	(defmethod :walk_nodes (_this _fi _fo)
-		; (. scene_node :walk_nodes fnc_in fnc_out)
+		; (. scene_node :walk_nodes fnc_in fnc_out) -> scene_node
 		;if fnc_in returns nil, it will step down into that nodes children.
 		;fnc_out is allways called to balence calls to fnc_in.
 		(defq _stack (list _this (get :children _this) 0))
@@ -181,7 +181,8 @@
 					(push _stack _this _children (inc _idx)
 						(defq _this (elem _idx _children)) (get :children _this) 0))
 				(t  ;step out
-					(_fo _this _children)))))
+					(_fo _this _children))))
+		this)
 	)
 
 (defclass Scene-object (mesh color &optional name) (Scene-node name)
@@ -213,7 +214,7 @@
 	; (Scene &optional name) -> scene_node
 
 	(defmethod :render (this canvas size left right top bottom near far mode)
-		; (. scene_node :render canvas size left right top bottom near far) -> tris
+		; (. scene_node :render canvas size left right top bottom near far) -> scene_node
 		(. canvas :fill 0)
 		(defq mat4x4_frust (Mat4x4-frustum left right top bottom near far)
 			matrix_stack (list) imatrix_stack (list)
@@ -225,8 +226,8 @@
 			(lambda (object children)
 				(push matrix_stack (. object :get_matrix))
 				(push imatrix_stack (. object :get_imatrix))
-				(defq mat4x4_obj (reduce (# (mat4x4-mul %0 %1)) matrix_stack)
-					imat4x4_obj (reduce-rev (# (mat4x4-mul %0 %1)) imatrix_stack))
+				(defq mat4x4_obj (reduce mat4x4-mul matrix_stack)
+					imat4x4_obj (reduce-rev mat4x4-mul imatrix_stack))
 				(when (def? :mesh object)
 					(defq mat4x4_proj (mat4x4-mul mat4x4_frust mat4x4_obj))
 					(if mode
@@ -246,7 +247,8 @@
 						(. canvas :ftri p)))
 				(task-slice))
 			poly_buckets)
-		(. canvas :swap))
+		(. canvas :swap)
+		this)
 	)
 
 ;module
