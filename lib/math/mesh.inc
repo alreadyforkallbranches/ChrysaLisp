@@ -7,6 +7,9 @@
 ;module
 (env-push)
 
+(enums +tri 0
+	(enum i0 i1 i2 in))
+
 (defun Tri (i0 i1 i2 in)
 	(list i0 i1 i2 in))
 
@@ -189,10 +192,8 @@
 
 (defclass Mesh-data (num_verts num_norms num_tris data) (Mesh)
 	; (Mesh-data num_verts num_norms num_tris data) -> mesh
-	(defq verts (cap num_verts (list))
-		norms (cap num_norms (list))
-		tris (cap num_tris (list))
-		i 0)
+	(defq verts (cap num_verts (list)) norms (cap num_norms (list))
+		tris (cap num_tris (list)) i 0)
 	(times num_verts
 		(push verts (Vec4-r
 			(get-long data i)
@@ -208,15 +209,16 @@
 		(setq i (+ i (const (* +long_size 3)))))
 	(times num_tris
 		(push tris (Tri
-			(get-int data i)
-			(get-int data (+ i +int_size))
-			(get-int data (+ i (const (* +int_size 2))))
-			(get-int data (+ i (const (* +int_size 3))))))
+			(get-uint data i)
+			(get-uint data (+ i +int_size))
+			(get-uint data (+ i (const (* +int_size 2))))
+			(get-uint data (+ i (const (* +int_size 3))))))
 		(setq i (+ i (const (* +int_size 4)))))
 	(lower :verts :norms :tris))
 
 ;module
 (export (penv)
+	+tri_size
 	*class_Mesh* Mesh Mesh?
 	*class_Mesh-data* Mesh-data Mesh-data?
 	*class_Mesh-torus* Mesh-torus Mesh-torus?
