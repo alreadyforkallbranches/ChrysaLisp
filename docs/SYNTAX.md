@@ -2058,18 +2058,6 @@
 (export env sym ...)
 ```
 
-### f2i
-
-```code
-(f2i fixed)
-```
-
-### f2r
-
-```code
-(f2r fixed)
-```
-
 ### ffi
 
 ```code
@@ -2302,18 +2290,6 @@
 
 ```code
 (hash obj)
-```
-
-### i2f
-
-```code
-(i2f num)
-```
-
-### i2r
-
-```code
-(i2r num)
 ```
 
 ### identity
@@ -2656,6 +2632,24 @@
 
 ```code
 (min num num ...)
+```
+
+### n2f
+
+```code
+(n2f num)
+```
+
+### n2i
+
+```code
+(n2i num)
+```
+
+### n2r
+
+```code
+(n2r num)
 ```
 
 ### neg
@@ -3072,18 +3066,6 @@
 (quote form)
 ```
 
-### r2f
-
-```code
-(r2f real)
-```
-
-### r2i
-
-```code
-(r2i real)
-```
-
 ### raise
 
 ```code
@@ -3454,6 +3436,12 @@
 
 ```code
 (throw str form)
+```
+
+### time-in-seconds
+
+```code
+(time-in-seconds time) -> str
 ```
 
 ### times

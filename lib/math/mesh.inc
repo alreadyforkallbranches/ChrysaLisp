@@ -10,8 +10,8 @@
 (enums +tri 0
 	(enum i0 i1 i2 in))
 
-(defun Tri (i0 i1 i2 in)
-	(list i0 i1 i2 in))
+(defmacro Tri (i0 i1 i2 in)
+	`(list ,i0 ,i1 ,i2 ,in))
 
 (defun Normal (p0 p1 p2)
 	(defq n (apply reals (vec-cross-3d
@@ -81,17 +81,17 @@
 
 (defclass Mesh-sphere (radius eps) (Mesh)
 	; (Mesh-sphere radius eps) -> mesh
-	(defq y 1 eps2 (* eps 2) eps2_r (i2r eps2)
+	(defq y 1 eps2 (* eps 2) eps2_r (n2r eps2)
 		verts (cap (+ (* eps2 (dec eps)) 2) (list))
 		norms (cap (* eps eps2) (list))
 		tris (cap (+ (* eps2 (- eps 2) 2) (* eps2 2)) (list)))
 	;gen verts
 	(while (< y eps)
 		(task-slice)
-		(defq x 0 ya (/ (* (i2r y) +real_2pi) eps2_r)
+		(defq x 0 ya (/ (* (n2r y) +real_2pi) eps2_r)
 			yv (* radius (cos ya)) r (* radius (sin ya)))
 		(while (< x eps2)
-			(defq xa (/ (* (i2r x) +real_2pi) eps2_r)
+			(defq xa (/ (* (n2r x) +real_2pi) eps2_r)
 				xv (* r (sin xa)) zv (* r (cos xa)))
 			(push verts (Vec3-r xv yv zv))
 			(setq x (inc x)))
@@ -131,18 +131,18 @@
 
 (defclass Mesh-torus (radius_ring radius_body eps) (Mesh)
 	; (Mesh-torus radius_ring radius_body eps) -> mesh
-	(defq y 0 eps2 (* eps 2) eps_r (i2r eps) eps2_r (i2r eps2)
+	(defq y 0 eps2 (* eps 2) eps_r (n2r eps) eps2_r (n2r eps2)
 		verts (cap (* eps eps2) (list))
 		norms (cap (* eps eps2) (list))
 		tris (cap (* eps eps2 2) (list)))
 	;gen verts
 	(while (< y eps)
 		(task-slice)
-		(defq x 0 ya (/ (* (i2r y) +real_2pi) eps_r)
+		(defq x 0 ya (/ (* (n2r y) +real_2pi) eps_r)
 			yv (* radius_body (cos ya))
 			r (+ radius_ring (* radius_body (sin ya))))
 		(while (< x eps2)
-			(defq xa (/ (* (i2r x) +real_2pi) eps2_r)
+			(defq xa (/ (* (n2r x) +real_2pi) eps2_r)
 				xv (* r (sin xa)) zv (* r (cos xa)))
 			(push verts (Vec3-r xv yv zv))
 			(setq x (inc x)))
@@ -200,20 +200,20 @@
 			(get-long data (+ i +long_size))
 			(get-long data (+ i (const (* +long_size 2))))
 			(get-long data (+ i (const (* +long_size 3))))))
-		(setq i (+ i (const (* +long_size 4)))))
+		(setq i (+ i (const (* +long_size +vec4_size)))))
 	(times num_norms
 		(push norms (Vec3-r
 			(get-long data i)
 			(get-long data (+ i +long_size))
 			(get-long data (+ i (const (* +long_size 2))))))
-		(setq i (+ i (const (* +long_size 3)))))
+		(setq i (+ i (const (* +long_size +vec3_size)))))
 	(times num_tris
 		(push tris (Tri
 			(get-uint data i)
 			(get-uint data (+ i +int_size))
 			(get-uint data (+ i (const (* +int_size 2))))
 			(get-uint data (+ i (const (* +int_size 3))))))
-		(setq i (+ i (const (* +int_size 4)))))
+		(setq i (+ i (const (* +int_size +tri_size)))))
 	(lower :verts :norms :tris))
 
 ;module

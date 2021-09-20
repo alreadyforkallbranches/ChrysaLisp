@@ -28,7 +28,7 @@
 	+near +focal_dist +far (+ +near +stage_depth)
 	+top (* +focal_dist +real_1/2) +bottom (* +focal_dist +real_-1/2)
 	+left (* +focal_dist +real_-1/2) +right (* +focal_dist +real_1/2)
-	*auto_mode* nil *render_mode* nil *dirty* t)
+	*auto_mode* nil *render_mode* nil)
 
 (ui-window *window* ()
 	(ui-title-bar *title* "Mesh" (0xea19 0xea1b 0xea1a) +event_close)
@@ -69,10 +69,10 @@
 
 (defun set-rot (slider angle)
 	(set (. slider :dirty) :value
-		(r2i (/ (* angle (const (i2r 1000))) +real_2pi))))
+		(n2i (/ (* angle (const (n2r 1000))) +real_2pi))))
 
 (defun get-rot (slider)
-	(/ (* (i2r (get :value slider)) +real_2pi) (const (i2r 1000))))
+	(/ (* (n2r (get :value slider)) +real_2pi) (const (n2r 1000))))
 
 (defun dispatch-job (key val)
 	;send another job to child
@@ -110,9 +110,9 @@
 	;create mesh loader jobs
 	(each (lambda ((name command))
 			(push job_que (cat (str-alloc +job_name) (pad name 16) command)))
-		'(("sphere.1" "(Mesh-iso (Iso-sphere 20 20 20) (f2r 0.25))")
-		("capsule" "(Mesh-iso (Iso-capsule 20 20 20) (f2r 0.25))")
-		("cube.1" "(Mesh-iso (Iso-cube 8 8 8) (f2r 0.45))")
+		'(("sphere.1" "(Mesh-iso (Iso-sphere 20 20 20) (n2r 0.25))")
+		("capsule" "(Mesh-iso (Iso-capsule 20 20 20) (n2r 0.25))")
+		("cube.1" "(Mesh-iso (Iso-cube 8 8 8) (n2r 0.45))")
 		("torus.1" "(Mesh-torus +real_1 +real_1/3 20)")
 		("sphere.2" "(Mesh-sphere +real_1/2 10)")))
 	;create scene graph
@@ -142,11 +142,14 @@
 	(catch (eval action) (progn (print _)(print) t)))
 
 (defun main ()
+	;; (defq then (pii-time))
+	;; (times 10 (Mesh-iso (Iso-capsule 30 30 30) (n2r 0.25)))
+	;; (prin (time-in-seconds (- (pii-time) then)))(print)
 	(bind '(x y w h) (apply view-locate (.-> *window* (:connect +event_layout) :pref_size)))
 	(.-> main_widget (:set_canvas_flags +canvas_mode) (:fill +argb_black) :swap)
 	(radio-select style_toolbar 0)
 	(gui-add-front (. *window* :change x y w h))
-	(defq select (alloc-select +select_size) *running* t
+	(defq select (alloc-select +select_size) *running* t *dirty* t
 		jobs (list) scene (create-scene jobs) farm (Farm create destroy 4))
 	(tooltips (elem +select_tip select))
 	(mail-timeout (elem +select_frame_timer select) frame_timer_rate 0)
@@ -192,9 +195,9 @@
 				;frame timer event
 				(mail-timeout (elem +select_frame_timer select) frame_timer_rate 0)
 				(when *auto_mode*
-					(setq *rotx* (% (+ *rotx* (f2r 0.01)) +real_2pi)
-						*roty* (% (+ *roty* (f2r 0.02)) +real_2pi)
-						*rotz* (% (+ *rotz* (f2r 0.03)) +real_2pi)
+					(setq *rotx* (% (+ *rotx* (n2r 0.01)) +real_2pi)
+						*roty* (% (+ *roty* (n2r 0.02)) +real_2pi)
+						*rotz* (% (+ *rotz* (n2r 0.03)) +real_2pi)
 						*dirty* t)
 					(set-rot xrot_slider *rotx*)
 					(set-rot yrot_slider *roty*)
