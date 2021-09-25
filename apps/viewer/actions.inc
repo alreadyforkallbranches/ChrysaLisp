@@ -61,7 +61,8 @@ key_map_control (fmap-kv
 	(ascii-code "0") action-right-bracket))
 
 ;module
-(export (penv)
-	event_map key_map key_map_shift key_map_control action-maximise
-	action-select-word action-select-line action-select-paragraph)
+(export-symbols
+	event_map key_map key_map_shift key_map_control action-maximise)
+(export-classes
+	Edit-vdu Viewer-vdu)
 (env-pop)

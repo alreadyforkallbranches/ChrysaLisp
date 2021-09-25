@@ -10,7 +10,7 @@
 (import "./edit.inc")
 (import "./select.inc")
 (import "./clipboard.inc")
-(import "././edit/ui.inc")
+(import "./ui.inc")
 
 (defq
 event_map (fmap-kv
@@ -53,8 +53,8 @@ key_map_control (fmap-kv
 	(ascii-code "-") action-minimise))
 
 ;module
-(export (penv)
-	event_map key_map key_map_shift key_map_control
-	action-select-word action-select-line action-select-paragraph
-	action-insert)
+(export-symbols
+	event_map key_map key_map_shift key_map_control action-insert)
+(export-classes
+	Edit-vdu Viewer-vdu Terminal-vdu)
 (env-pop)
