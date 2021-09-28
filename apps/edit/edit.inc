@@ -3,26 +3,25 @@
 ;;;;;;;;;;;;;;;;;
 
 (defun action-insert (string)
-	(.-> *edit* (:insert string) :clear_selection)
+	(. *edit* :insert string)
 	(refresh))
 
 (defun action-backspace ()
-	(.-> *edit* :backspace :clear_selection)
+	(. *edit* :backspace)
 	(refresh))
 
 (defun action-delete ()
-	(.-> *edit* :delete :clear_selection)
+	(. *edit* :delete)
 	(refresh))
 
 (defun action-break ()
-	(.-> *edit* :break :clear_selection)
+	(. *edit* :break)
 	(refresh))
 
 (defun action-tab ()
 	(bind '(cx cy) (. *edit* :get_cursor))
 	(bind '(ax ay) (. *edit* :get_anchor))
 	(cond
-		((= ay cy)
-			(.-> *edit* :tab :clear_selection))
+		((= ay cy) (. *edit* :tab))
 		((. *edit* :right_tab)))
 	(refresh))
