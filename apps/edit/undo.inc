@@ -3,14 +3,18 @@
 ;;;;;;;;;;;;;;
 
 (defun action-undo ()
-	(. *current_buffer* :undo)
-	(clear-selection) (refresh))
+	(. (. *edit* :get_buffer) :undo)
+	(. *edit* :clear_selection)
+	(refresh))
 
 (defun action-redo ()
-	(. *current_buffer* :redo)
-	(clear-selection) (refresh))
+	(. (. *edit* :get_buffer) :redo)
+	(. *edit* :clear_selection)
+	(refresh))
 
 (defun action-rewind ()
-	(while (> (length (get :undo_stack *current_buffer*)) 0)
-		(. *current_buffer* :undo))
-	(clear-selection) (refresh))
+	(defq buffer (. *edit* :get_buffer))
+	(while (> (length (get :undo_stack buffer)) 0)
+		(. buffer :undo))
+	(. *edit* :clear_selection)
+	(refresh))

@@ -3,75 +3,57 @@
 ;;;;;;;;;;;;;;;;
 
 (defun action-home ()
-	(. *current_buffer* :set_cursor 0 *cursor_y*)
-	(clear-selection) (refresh))
+	(. *edit* :home)
+	(refresh))
 
 (defun action-end ()
-	(bind '(x y) (. *current_buffer* :constrain +max_int *cursor_y*))
-	(. *current_buffer* :set_cursor x y)
-	(clear-selection) (refresh))
+	(. *edit* :end)
+	(refresh))
 
 (defun action-left ()
-	(cond
-		((selection?)
-			(bind '(sx sy sx1 sy1) (sort-selection))
-			(. *current_buffer* :set_cursor sx sy))
-		(t  (. *current_buffer* :left)))
-	(clear-selection) (refresh))
+	(. *edit* :left)
+	(refresh))
 
 (defun action-right ()
-	(cond
-		((selection?)
-			(bind '(sx sy sx1 sy1) (sort-selection))
-			(. *current_buffer* :set_cursor sx1 sy1))
-		(t  (. *current_buffer* :right)))
-	(clear-selection) (refresh))
+	(. *edit* :right)
+	(refresh))
 
 (defun action-up ()
-	(when (selection?)
-		(bind '(sx sy sx1 sy1) (sort-selection))
-		(. *current_buffer* :set_cursor sx sy))
-	(. *current_buffer* :up)
-	(clear-selection) (refresh))
+	(. *edit* :up)
+	(refresh))
 
 (defun action-down ()
-	(when (selection?)
-		(bind '(sx sy sx1 sy1) (sort-selection))
-		(. *current_buffer* :set_cursor sx1 sy1))
-	(. *current_buffer* :down)
-	(clear-selection) (refresh))
-
-(defun action-left-bracket ()
-	(when (bind '(x y) (. *current_buffer* :left_bracket))
-		(. *current_buffer* :set_cursor x y)
-		(clear-selection) (refresh)))
-
-(defun action-right-bracket ()
-	(when (bind '(x y) (. *current_buffer* :right_bracket))
-		(. *current_buffer* :set_cursor x y)
-		(clear-selection) (refresh)))
+	(. *edit* :down)
+	(refresh))
 
 (defun action-home-select ()
-	(. *current_buffer* :set_cursor 0 *cursor_y*)
+	(. *edit* :home_select)
 	(refresh))
 
 (defun action-end-select ()
-	(bind '(x y) (. *current_buffer* :constrain +max_int *cursor_y*))
-	(. *current_buffer* :set_cursor x y)
+	(. *edit* :end_select)
 	(refresh))
 
 (defun action-left-select ()
-	(. *current_buffer* :left)
+	(. *edit* :left_select)
 	(refresh))
 
 (defun action-right-select ()
-	(. *current_buffer* :right)
+	(. *edit* :right_select)
 	(refresh))
 
 (defun action-up-select ()
-	(. *current_buffer* :up)
+	(. *edit* :up_select)
 	(refresh))
 
 (defun action-down-select ()
-	(. *current_buffer* :down)
+	(. *edit* :down_select)
+	(refresh))
+
+(defun action-left-bracket ()
+	(. *edit* :left_bracket)
+	(refresh))
+
+(defun action-right-bracket ()
+	(. *edit* :right_bracket)
 	(refresh))

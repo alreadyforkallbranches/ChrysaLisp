@@ -2,9 +2,10 @@
 ; file actions
 ;;;;;;;;;;;;;;
 
-(defun trim-buffer (*current_buffer*)
-	(when (> (bind '(w h) (. *current_buffer* :get_size)) 0)
-		(undoable
+(defun trim-buffer (buffer)
+	(when (> (bind '(w h) (. buffer :get_size)) 0)
+		(undoable buffer
+			(bind '(cx cy) (. buffer :get_cursor))
 			;trim front
 			(defq y (some! 0 h nil
 					(# (unless (blank-line? %0) _))
@@ -24,26 +25,30 @@
 							(:set_cursor (length trimed_line) _)
 							(:delete (- (length line) (length trimed_line))))))
 				(list (. buffer :get_text_lines)))
-			(bind '(x y) (. buffer :constrain *cursor_x* *cursor_y*))
-		(. buffer :set_cursor x y)))
-	*current_buffer*)
+			(bind '(cx cy) (. buffer :constrain cx cy))
+			(. buffer :set_cursor cx cy)))
+	buffer)
 
 (defun action-trim ()
-	(trim-buffer *current_buffer*)
-	(clear-selection) (refresh))
+	(trim-buffer (. *edit* :get_buffer))
+	(. *edit* :clear_selection)
+	(refresh))
 
 (defun action-save ()
 	(save-open-files)
-	(when (and *current_file* (. (trim-buffer *current_buffer*) :get_modified))
-		(. *current_buffer* :file_save *current_file*)
-		(clear-selection) (refresh)))
+	(defq buffer (. *edit* :get_buffer))
+	(when (and *current_file* (. (trim-buffer buffer) :get_modified))
+		(. buffer :file_save *current_file*)
+		(. *edit* :clear_selection)
+		(refresh)))
 
 (defun action-save-all ()
 	(save-open-files)
 	(. *meta_map* :each (lambda (file (_ _ _ _ _ _ _ buffer))
 		(if (and file (. (trim-buffer buffer) :get_modified))
 			(. buffer :file_save file))))
-	(clear-selection) (refresh))
+	(. *edit* :clear_selection)
+	(refresh))
 
 (defun action-new ()
 	(when (not (eql (defq file (get :clear_text *name_text*)) ""))

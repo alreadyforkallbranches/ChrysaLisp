@@ -5,7 +5,6 @@
 ; actions
 ;;;;;;;;;
 
-(import "././edit/utils.inc")
 (import "././edit/cursor.inc")
 (import "././edit/block.inc")
 (import "././edit/select.inc")
@@ -64,5 +63,5 @@ key_map_control (fmap-kv
 (export-symbols
 	event_map key_map key_map_shift key_map_control action-maximise)
 (export-classes
-	Edit-vdu Viewer-vdu)
+	Editor-edit Viewer-edit)
 (env-pop)

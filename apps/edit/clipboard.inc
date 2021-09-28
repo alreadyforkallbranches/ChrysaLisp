@@ -3,19 +3,24 @@
 ;;;;;;;;;;;;;;;;;;;
 
 (defun action-cut ()
-	(clipboard-put (. *current_buffer* :cut *anchor_x* *anchor_y*))
-	(clear-selection) (refresh))
+	(bind '(ax ay) (. *edit* :get_anchor))
+	(clipboard-put (. (. *edit* :get_buffer) :cut ax ay))
+	(. *edit* :clear_selection)
+	(refresh))
 
 (defun action-copy ()
-	(clipboard-put (. *current_buffer* :copy *anchor_x* *anchor_y*))
+	(bind '(ax ay) (. *edit* :get_anchor))
+	(clipboard-put (. (. *edit* :get_buffer) :copy ax ay))
 	(refresh))
 
 (defun action-paste ()
 	(unless (eql (defq data (clipboard-get)) "")
-		(undoable
-			(. buffer :cut *anchor_x* *anchor_y*)
+		(undoable nil
+			(bind '(ax ay) (. *edit* :get_anchor))
+			(. buffer :cut ax ay)
 			(. buffer :paste data))
-		(clear-selection) (refresh)))
+		(. *edit* :clear_selection)
+		(refresh)))
 
 (defun action-cut-word ()
 	(action-select-word)

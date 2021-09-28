@@ -14,11 +14,7 @@
 
 (defq +vdu_min_width 60 +vdu_min_height 40
 	+vdu_max_width 120 +vdu_max_height 40
-	*current_buffer* (Buffer t) *meta_map* (fmap 31) *underlay* (list)
-	+selected (apply nums (map (lambda (_)
-		(const (<< (canvas-from-argb32 +argb_green6 15) 48))) (str-alloc 8192)))
-	+not_selected (nums-sub +selected +selected)
-	+bracket_char (nums 0x7f))
+	*meta_map* (fmap 31))
 
 (ui-window *window* (:color 0xc0000000)
 	(ui-title-bar *title* "Terminal" (0xea19 0xea1b 0xea1a) +event_close)
@@ -28,11 +24,8 @@
 		(ui-backdrop _ (:color (const *env_toolbar_col*))))
 	(ui-flow _ (:flow_flags +flow_left_fill)
 		(. (ui-slider *yslider*) :connect +event_yscroll)
-		(ui-flow _ (:flow_flags +flow_up_fill)
-			(. (ui-slider *xslider*) :connect +event_xscroll)
-			(ui-flow stack_flow (:flow_flags +flow_stack_fill :font *env_terminal_font*)
-				(ui-vdu *vdu_underlay* (:vdu_width +vdu_min_width :vdu_height +vdu_min_height
-						:min_width 0 :min_height 0 :ink_color +argb_green))))))
+		(ui-flow main_flow (:flow_flags +flow_up_fill)
+			(. (ui-slider *xslider*) :connect +event_xscroll))))
 
 (defun input-poll ()
 	(cond
@@ -57,76 +50,53 @@
 			(defq msg (mail-read (elem (defq idx (mail-select *select*)) *select*)))))
 	(list msg idx))
 
-(defun clear-selection ()
-	;clear the selection
-	(bind '(x y) (. *current_buffer* :get_cursor))
-	(bind '(x y) (. *current_buffer* :constrain x y))
-	(setq *anchor_x* x *anchor_y* y))
-
-(defun create-selection ()
-	;create the underlay for block selection
-	(bind '(x y) (. *current_buffer* :get_cursor))
-	(defq x1 *anchor_x* y1 *anchor_y*)
-	(if (> y y1) (defq st x x x1 x1 st st y y y1 y1 st))
-	(and (= y y1) (> x x1) (defq st x x x1 x1 st))
-	(cap (inc y1) (clear *underlay*))
-	(defq uy -1 buffer (. *current_buffer* :get_text_lines))
-	(while (< (setq uy (inc uy)) y) (push *underlay* ""))
-	(cond
-		((= y y1)
-			(push *underlay* (cat (slice 0 x +not_selected) (slice x x1 +selected))))
-		(t  (push *underlay* (cat
-				(slice 0 x +not_selected)
-				(slice x (inc (length (elem y buffer))) +selected)))
-			(while (< (setq y (inc y)) y1)
-				(push *underlay* (slice 0 (inc (length (elem y buffer))) +selected)))
-			(push *underlay* (slice 0 x1 +selected)))))
-
 (defun load-display ()
 	;load the vdu widgets with the text and selection
-	(. *current_buffer* :vdu_load *vdu* *scroll_x* *scroll_y*)
-	(bind '(x y) (. *current_buffer* :get_cursor))
-	(if (and (= x *anchor_x*) (= y *anchor_y*))
-		(clear *underlay*) (create-selection))
-	(. *vdu_underlay* :load *underlay* *scroll_x* *scroll_y* -1 -1))
+	(bind '(cx cy) (. *edit* :get_cursor))
+	(bind '(sx sy) (. *edit* :get_scroll))
+	(bind '(ax ay) (. *edit* :get_anchor))
+	(. (. *edit* :get_buffer) :vdu_load (. *edit* :get_vdu_text) sx sy)
+	(if (and (= cx ax) (= cy ay))
+		(. *edit* :underlay_clear)
+		(. *edit* :underlay_selection)))
 
 (defun set-sliders ()
 	;set slider values
-	(bind '(w h) (. *current_buffer* :get_size))
-	(bind '(vw vh) (. *vdu* :vdu_size))
-	(defq smaxx (max 0 (- w vw -1)) smaxy (max 0 (- h vh)))
-	(setq *scroll_x* (max 0 (min *scroll_x* smaxx)) *scroll_y* (max 0 (min *scroll_y* smaxy)))
-	(def (. *xslider* :dirty) :maximum smaxx :portion vw :value *scroll_x*)
-	(def (. *yslider* :dirty) :maximum smaxy :portion vh :value *scroll_y*))
+	(bind '(w h) (. (. *edit* :get_buffer) :get_size))
+	(bind '(sx sy) (. *edit* :get_scroll))
+	(bind '(vw vh) (. (. *edit* :get_vdu_text) :vdu_size))
+	(defq smaxx (max 0 (- w vw -1)) smaxy (max 0 (- h vh))
+		sx (max 0 (min sx smaxx)) sy (max 0 (min sy smaxy)))
+	(def (. *xslider* :dirty) :maximum smaxx :portion vw :value sx)
+	(def (. *yslider* :dirty) :maximum smaxy :portion vh :value sy)
+	(. *edit* :set_scroll sx sy))
 
 (defun refresh ()
 	(unless (input-poll)
 		;refresh display and ensure cursor is visible
-		(bind '(x y) (. *current_buffer* :get_cursor))
-		(bind '(w h) (. *vdu* :vdu_size))
-		(if (< x *scroll_x*) (setq *scroll_x* x))
-		(if (< y *scroll_y*) (setq *scroll_y* y))
-		(if (>= x (+ *scroll_x* w)) (setq *scroll_x* (- x w -1)))
-		(if (>= y (+ *scroll_y* h)) (setq *scroll_y* (- y h -1)))
+		(bind '(cx cy) (. *edit* :get_cursor))
+		(bind '(sx sy) (. *edit* :get_scroll))
+		(bind '(w h) (. (. *edit* :get_vdu_text) :vdu_size))
+		(if (< cx sx) (setq sx cx))
+		(if (< cy sy) (setq sy cy))
+		(if (>= cx (+ sx w)) (setq sx (- cx w -1)))
+		(if (>= cy (+ sy h)) (setq sy (- cy h -1)))
+		(. *edit* :set_scroll sx sy)
 		(set-sliders) (load-display)))
 
 (defun window-resize ()
 	;layout the window and size the vdu to fit
-	(bind '(w h) (. *vdu* :max_size))
-	(set *vdu* :vdu_width w :vdu_height h)
-	(set *vdu_underlay* :vdu_width w :vdu_height h)
-	(. *vdu* :layout)
-	(. *vdu_underlay* :layout)
+	(bind '(w h) (. (. *edit* :get_vdu_text) :max_size))
+	(set *edit* :vdu_width w :vdu_height h)
+	(. *edit* :layout)
 	(set-sliders) (load-display))
 
 (defun vdu-resize (w h)
 	;size the vdu and layout the window to fit
-	(set *vdu* :vdu_width w :vdu_height h :min_width w :min_height h)
-	(set *vdu_underlay* :vdu_width w :vdu_height h :min_width w :min_height h)
+	(set *edit* :vdu_width w :vdu_height h :min_width w :min_height h)
 	(bind '(x y w h) (apply view-fit
 		(cat (. *window* :get_pos) (. *window* :pref_size))))
-	(set *vdu* :min_width +vdu_min_width :min_height +vdu_min_height)
-	(set *vdu_underlay* :min_width +vdu_min_width :min_height +vdu_min_height)
+	(set *edit* :min_width +vdu_min_width :min_height +vdu_min_height)
 	(. *window* :change_dirty x y w h)
 	(set-sliders) (load-display))
 
@@ -140,9 +110,10 @@
 
 (defun main ()
 	(defq *select* (alloc-select +select_size)
-		*cursor_x* 0 *cursor_y* 0 *anchor_x* 0 *anchor_y* 0 *scroll_x* 0 *scroll_y* 0
-		*running* t *pipe* nil *history* (list) *history_idx* 0 *vdu* (Terminal-vdu))
-	(. stack_flow :add_front *vdu*)
+		*cursor_x* 0 *cursor_y* 0 *running* t *pipe* nil
+		*history* (list) *history_idx* 0 *edit* (Terminal-edit))
+	(. *edit* :set_underlay_color +argb_green6)
+	(. main_flow :add_back *edit*)
 	(tooltips)
 	(bind '(x y w h) (apply view-locate (.-> *window* (:connect +event_layout) :pref_size)))
 	(gui-add-front (. *window* :change x y w h))
