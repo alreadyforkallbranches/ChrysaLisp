@@ -1908,12 +1908,6 @@
 (canvas-ftri canvas path)
 ```
 
-### canvas-info
-
-```code
-(canvas-info path)
-```
-
 ### canvas-load
 
 ```code
@@ -3252,10 +3246,22 @@
 (path-simplify tol src dst)
 ```
 
+### path-stroke-polygon
+
+```code
+(path-stroke-polygon path radius tol join) -> paths
+```
+
 ### path-stroke-polygons
 
 ```code
 (path-stroke-polygons dst radius tol join src) -> dst
+```
+
+### path-stroke-polyline
+
+```code
+(path-stroke-polyline path radius tol join cap1 cap2) -> path
 ```
 
 ### path-stroke-polylines
@@ -3322,6 +3328,24 @@
 
 ```code
 (pivot lambda list start end)
+```
+
+### pixmap-cpm-info
+
+```code
+(pixmap-cpm-info stream) -> (width height type)
+```
+
+### pixmap-file-info
+
+```code
+(pixmap-file-info file) -> (width height type)
+```
+
+### pixmap-tga-info
+
+```code
+(pixmap-tga-info stream) -> (width height type)
 ```
 
 ### pop
@@ -3436,6 +3460,12 @@
 
 ```code
 (read-char stream [width])
+```
+
+### read-data
+
+```code
+(read-data stream bytes) -> str
 ```
 
 ### read-int

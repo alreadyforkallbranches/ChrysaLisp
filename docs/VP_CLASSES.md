@@ -771,19 +771,6 @@ trashes
 r1-r14
 ```
 
-### canvas :lisp_info -> gui/canvas/lisp_info
-
-```code
-inputs
-r0 = lisp object (ptr)
-r1 = args list object (ptr)
-outputs
-r0 = lisp object (ptr)
-r1 = return value object (ptr)
-trashes
-r1-r14
-```
-
 ### canvas :lisp_load -> gui/canvas/lisp_load
 
 ```code
@@ -5013,7 +5000,33 @@ trashes
 r1-r14
 ```
 
+### path :lisp_stroke_polygon -> gui/path/lisp_stroke_polygon
+
+```code
+inputs
+r0 = lisp object (ptr)
+r1 = args list object (ptr)
+outputs
+r0 = lisp object (ptr)
+r1 = return value object (ptr)
+trashes
+r1-r14
+```
+
 ### path :lisp_stroke_polygons -> gui/path/lisp_stroke_polygons
+
+```code
+inputs
+r0 = lisp object (ptr)
+r1 = args list object (ptr)
+outputs
+r0 = lisp object (ptr)
+r1 = return value object (ptr)
+trashes
+r1-r14
+```
+
+### path :lisp_stroke_polyline -> gui/path/lisp_stroke_polyline
 
 ```code
 inputs
@@ -5087,6 +5100,23 @@ trashes
 r1-r14
 ```
 
+### path :stroke_polygon -> gui/path/stroke_polygon
+
+```code
+inputs
+r0 = path object (ptr)
+r1 = stack array object (ptr)
+r2 = radius (fixed)
+r3 = tolerance (fixed)
+r4 = join style (byte)
+outputs
+r0 = path object (ptr)
+r1 = output path1 object (ptr)
+r2 = output path2 object (ptr)
+trashes
+r1-r14
+```
+
 ### path :stroke_polygons -> gui/path/stroke_polygons
 
 ```code
@@ -5099,6 +5129,24 @@ r4 = tolerance (fixed)
 r5 = join style (byte)
 outputs
 r0 = output list of path objects (ptr)
+trashes
+r1-r14
+```
+
+### path :stroke_polyline -> gui/path/stroke_polyline
+
+```code
+inputs
+r0 = path object (ptr)
+r1 = stack array object (ptr)
+r2 = radius (fixed)
+r3 = tolerance (fixed)
+r4 = join style (byte)
+r5 = cap style1 (byte)
+r6 = cap style2 (byte)
+outputs
+r0 = path object (ptr)
+r1 = output path object (ptr)
 trashes
 r1-r14
 ```
@@ -5216,59 +5264,6 @@ outputs
 r1 = col (uint)
 trashes
 r1-r5
-```
-
-### pixmap :info -> gui/pixmap/info
-
-```code
-inputs
-r0 = c string name (pubyte)
-outputs
-r0 = -1 if error, else width (pixels)
-r1 = -1 if error, else height (pixels)
-r2 = -1 if error, else type (uint)
-trashes
-r0-r14
-```
-
-### pixmap :info_cpm -> gui/pixmap/info_cpm
-
-```code
-inputs
-r5 = stream object (ptr)
-outputs
-r0 = -1 if error, else width (pixels)
-r1 = -1 if error, else height (pixels)
-r2 = -1 if error, else type (uint)
-trashes
-r0-r14
-```
-
-### pixmap :info_file -> gui/pixmap/info_file
-
-```code
-inputs
-r4 = c string name (pubyte)
-r5 = stream object (ptr)
-outputs
-r0 = -1 if error, else width (pixels)
-r1 = -1 if error, else height (pixels)
-r2 = -1 if error, else type (uint)
-trashes
-r0-r14
-```
-
-### pixmap :info_tga -> gui/pixmap/info_tga
-
-```code
-inputs
-r5 = stream object (ptr)
-outputs
-r0 = -1 if error, else width (pixels)
-r1 = -1 if error, else height (pixels)
-r2 = -1 if error, else type (uint)
-trashes
-r0-r14
 ```
 
 ### pixmap :init -> gui/pixmap/init
