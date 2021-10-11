@@ -214,11 +214,8 @@
 			(defq ma (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0))
 			(bind '(m00 m01 m10 m11 tx ty) (map (# (n2f (read-num %0)))
 				(split (slice (inc (find "(" val)) (find-rev ")" val) val) ", ")))
-			(defq mb (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0)
-				ma (mat3x3-mul-f ma mb))
-			(bind '(ma mb _) ma)
-			(bind '(m00 m01 tx) ma)
-			(bind '(m10 m11 ty) mb)
+			(bind '((m00 m01 tx) (m10 m11 ty) _)
+				(mat3x3-mul-f ma (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0)))
 			(list m00 m01 m10 m11 tx ty))
 		(("stroke" "fill")
 			(case val
@@ -233,10 +230,8 @@
 				("magenta" +argb_magenta)
 				("cyan" +argb_cyan)
 				(t (cond
-					((starts-with "#" val)
-						(col-to-num val))
-					((starts-with "rgb(" val)
-						(rgb-to-num val))
+					((starts-with "#" val) (col-to-num val))
+					((starts-with "rgb(" val) (rgb-to-num val))
 					(t val)))))
 		(("stroke-linecap")
 			(case val
@@ -268,8 +263,7 @@
 			((eql key "style")
 				(each (lambda ((k v))
 						(. entry :insert k (read-attribute entry k v)))
-					(map (# (split %0 ":")) (split val ";")))
-				val)
+					(map (# (split %0 ":")) (split val ";"))))
 			(t (setq val (read-attribute entry key val))))
 		(. entry :insert key val)) keys vals)
 	entry)
@@ -306,8 +300,9 @@
 									stroke_linejoin stroke_linecap stroke_linecap)))))
 							paths (list)))))))
 
-(defun SVG-Canvas (stream scale flags)
-	; (SVG-Canvas stream scale flags) -> nil | canvas
+(defun SVG-Canvas (stream &optional scale)
+	; (SVG-Canvas stream [scale]) -> nil | canvas
+	(setd scale 1)
 	(defq canvas nil stack
 		(list (lmap-kv
 			"stroke" 0
@@ -318,14 +313,13 @@
 			"fill-rule" +winding_none_zero
 			"fill-opacity" 1.0
 			"stroke-opacity" 1.0
-			"transform" '(1.0 0.0 0.0 1.0 0.0 0.0)
+			"transform" (list (n2f scale) 0.0 0.0 (n2f scale) 0.0 0.0)
 			"x" 0.0 "y" 0.0 "x1" 0.0 "y1" 0.0 "x2" 0.0 "y2" 0.0
 			"cx" 0.0 "cy" 0.0 "r" 0.0
 			"d" (path) "points" (path)
 			)))
 	(XML-parse stream
 		(lambda (command keys vals)
-			(task-slice)
 ;           (prin "open: " command " " keys " " vals)(print)
 			(case command
 				("svg"
@@ -333,7 +327,7 @@
 					(if (defq val (. entry :find "viewBox")) (bind '(_ _ width height) val))
 					(if (defq val (. entry :find "width")) (setq width val))
 					(if (defq val (. entry :find "height")) (setq height val))
-					(. (setq canvas (Canvas (/ (inc (n2i width)) scale) (/ (inc (n2i height)) scale) scale))
+					(. (setq canvas (Canvas (n2i width) (n2i height) (n2i scale)))
 						:set_canvas_flags +canvas_flag_antialias))
 				("g"
 					(push-attributes stack keys vals))
@@ -384,11 +378,13 @@
 					(pop stack))
 				))
 		(lambda (text)))
-	(. canvas :swap))
+	;resize to final output
+	(bind '(w h) (. canvas :pref_size))
+	(.-> (Canvas w h 1) (:resize canvas) :swap))
 
 (defun SVG-info (stream)
 	; (SVG-info stream) -> (width height type) | (-1 -1 -1)
-	(defq stack (list (lmap)) width 256 height 256)
+	(defq stack (list (lmap)) width -1 height -1)
 	(XML-parse stream
 		(lambda (command keys vals)
 			(when (eql command "svg")
