@@ -51,7 +51,7 @@
 		(t (throw "Unknown # val !" val))))
 
 (defun rgb-to-num (val)
-	(bind '(r g b) (map (const read-num) (slice 1 -1 (split val "(), "))))
+	(bind '(r g b) (map (const read-num) (slice 1 4 (split val "(), "))))
 	(+ +argb_black (<< r 16) (<< g 8) b))
 
 (defun parse-svg-path (d)
@@ -232,13 +232,13 @@
 				(t (cond
 					((starts-with "#" val) (col-to-num val))
 					((starts-with "rgb(" val) (rgb-to-num val))
-					(t val)))))
+					(t (throw "Unknown stroke/fill style !" val))))))
 		(("stroke-linecap")
 			(case val
 				("butt" +cap_butt)
 				("round" +cap_round)
 				("square" +cap_square)
-				(t (throw "Unknown cap style !" val))))
+				(t (throw "Unknown stroke-linecap style !" val))))
 		(("stroke-linejoin")
 			(case val
 				("miter" +join_miter)
@@ -246,12 +246,12 @@
 				("round" +join_round)
 				("miter-clip" +join_miter)
 				("arcs" +join_miter)
-				(t (throw "Unknown join style !" val))))
+				(t (throw "Unknown stroke-linejoin style !" val))))
 		("fill-rule"
 			(case val
 				("nonzero" +winding_none_zero)
 				("evenodd" +winding_odd_even)
-				(t (throw "Unknown winding !" val))))
+				(t (throw "Unknown fill-rule !" val))))
 		("d"
 			(gen-svg-path val))
 		(t  val)))
@@ -380,7 +380,7 @@
 		(lambda (text)))
 	;resize to final output
 	(bind '(w h) (. canvas :pref_size))
-	(.-> (Canvas w h 1) (:resize canvas) :swap))
+	(. (Canvas w h 1) :resize canvas))
 
 (defun SVG-info (stream)
 	; (SVG-info stream) -> (width height type) | (-1 -1 -1)
