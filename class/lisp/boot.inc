@@ -53,6 +53,7 @@
 (ffi copy "class/list/lisp_copy" 0)
 
 (ffi str "class/str/lisp_str" 0)
+(ffi str-to-num "class/str/lisp_to_num" 0)
 (ffi split "class/str/lisp_split" 0)
 (ffi expand "class/str/lisp_expand" 0)
 (ffi char "class/str/lisp_char" 0)
@@ -132,7 +133,7 @@
 (ffi weak-ref "class/obj/lisp_weak_ref" 0)
 (ffi obj-ref "class/obj/lisp_obj_ref" 0)
 
-(defq t 't nil 'nil
+(defq t 't nil 'nil *boot_env* (env)
 	+byte_size 1 +short_size 2 +int_size 4 +long_size 8 +ptr_size 8
 	+str_data 24 +node_id_size 16 +net_id_size 24
 	defmacro '(macro (n a &rest _) `(defq ,n (macro ,a ~_))))
@@ -649,20 +650,9 @@
 	; (num-to-char num) -> char
 	(elem _ "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
 
-(defun str-to-num (_)
-	; (str-to-num str) -> num
-	(defq n 0 b 10 f 0 m 1)
-	(when (eql (elem 0 _) "-")
-		(setq m -1 _ (slice 1 -1 _)))
-	(when (> (length _) 1)
-		(case (elem 1 _)
-			(("x" "X") (setq b 16 _ (slice 2 -1 _)))
-			(("o" "O") (setq b 8 _ (slice 2 -1 _)))
-			(("b" "B") (setq b 2 _ (slice 2 -1 _)))))
-	(each (lambda (_) (if (eql _ ".")
-			(setq f 1)
-			(setq n (+ (* n b) (char-to-num _)) f (* f b)))) _)
-	(if (= f 0) (* n m) (/ (<< (* n m) +fp_shift) f)))
+(defun str-as-num (_)
+	; (str-as-num str) -> num
+	(pop (nums (str-to-num _))))
 
 (defun num-to-utf8 (_)
 	; (num-to-utf8 num) -> str
