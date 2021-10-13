@@ -1,3 +1,5 @@
+;(import "lib/debug/profile.inc")
+
 (import "sys/lisp.inc")
 (import "class/lisp.inc")
 (import "gui/lisp.inc")
@@ -20,8 +22,8 @@
 		(unzip (split (pii-dirlist p) ",") (list (list) (list))))
 	(sort cmp out))
 
-(defq images (all-images "apps/images/data/")
-	index (some (# (if (eql "apps/images/data/logo.cpm" %0) _)) images)
+(defq images (filter (# (not (ends-with "monroe.svg" %0))) (all-images "apps/images/data/"))
+	index (some (# (if (eql "apps/images/data/tiger.svg" %0) _)) images)
 	id t)
 
 (ui-window *window* ()
@@ -64,4 +66,6 @@
 				(win-refresh (% (+ index (dec (* 2 (- id +event_prev))) (length images)) (length images))))
 			(t (. *window* :event *msg*))))
 	(free-select select)
-	(gui-sub *window*))
+	(gui-sub *window*)
+	(if (get 'profile-report)
+		(profile-report "Images")))

@@ -44,42 +44,58 @@
 (defun read-num (s)
 	(elem 0 (read (string-stream s) +char_space)))
 
-(defun col-to-num (val)
+(defun read-col (val)
 	(case (length val)
 		(4 (canvas-to-argb32 (read-num (cat "0xf" (slice 1 -1 val))) 12))
 		(7 (canvas-to-argb32 (read-num (cat "0x" (slice 1 -1 val))) 24))
 		(t (throw "Unknown # val !" val))))
 
-(defun rgb-to-num (val)
+(defun read-rgb (val)
 	(bind '(r g b) (map (const read-num) (slice 1 4 (split val "(), "))))
 	(+ +argb_black (<< r 16) (<< g 8) b))
+
+(defun read-transform (entry val)
+	(bind '(m00 m01 m10 m11 tx ty) (. entry :find "transform"))
+	(defq ma (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0))
+	(cond
+		((starts-with "matrix(" val)
+			(bind '(m00 m01 m10 m11 tx ty)
+					(map (# (n2f (read-num %0)))
+				 (slice 1 7 (split val "(), "))))
+			(defq mb (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0)))
+		((starts-with "translate(" val)
+			(bind '(tx ty)
+					(map (# (n2f (read-num %0)))
+				(slice 1 3 (split val "(), "))))
+			(defq mb (Mat3x3-f 1.0 0.0 tx 0.0 1.0 ty 0.0 0.0 1.0)))
+		((throw "Unknown transform !" val)))
+	(bind '((m00 m01 tx) (m10 m11 ty) _) (mat3x3-mul-f ma mb))
+	(list m00 m01 m10 m11 tx ty))
 
 (defun parse-svg-path (d)
 	(defq commands (list) token nil state :text)
 	(each (lambda (c)
 		(while c
-			(case state
-				(:text
+			(cond
+				((eql state :text)
 					(cond
 						((is-whitespace-char? c))
 						((eql c (ascii-char +char_comma)))
 						((is-command-char? c)
 							(push commands c))
 						((is-num-start-char? c)
-							(setq token (list c) state :number))
+							(setq token c state :number))
 						(t (throw "Unknown path char !" c)))
 					(setq c nil))
-				(:number
-					(cond
+				((cond
 						((is-num-mid-char? c)
-							(push token c)
-							(setq c nil))
-						(t  (push commands (n2f (read-num (apply cat token))))
-							(setq state :text))))
-			))) (cat d " "))
+							(setq token (cat token c) c nil))
+						(t  (push commands (n2f (read-num token)))
+							(setq state :text)))))))
+		(cat d " "))
 	(push commands "x"))
 
-(defun gen-svg-path (d)
+(defun read-path (d)
 	(defq i 0 paths (list) d (parse-svg-path d)
 		cx 0.0 cy 0.0 cpx 0.0 cpy 0.0 last_cmd " ")
 	(until (eql (defq cmd (elem i d)) "x")
@@ -210,13 +226,7 @@
 		("points"
 			(reduce (# (push %0 (n2f (read-num %1)))) (split val ", ") (path)))
 		("transform"
-			(bind '(m00 m01 m10 m11 tx ty) (. entry :find "transform"))
-			(defq ma (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0))
-			(bind '(m00 m01 m10 m11 tx ty) (map (# (n2f (read-num %0)))
-				(split (slice (inc (find "(" val)) (find-rev ")" val) val) ", ")))
-			(bind '((m00 m01 tx) (m10 m11 ty) _)
-				(mat3x3-mul-f ma (Mat3x3-f m00 m01 tx m10 m11 ty 0.0 0.0 1.0)))
-			(list m00 m01 m10 m11 tx ty))
+			(read-transform entry val))
 		(("stroke" "fill")
 			(case val
 				("none" 0)
@@ -230,8 +240,8 @@
 				("magenta" +argb_magenta)
 				("cyan" +argb_cyan)
 				(t (cond
-					((starts-with "#" val) (col-to-num val))
-					((starts-with "rgb(" val) (rgb-to-num val))
+					((starts-with "#" val) (read-col val))
+					((starts-with "rgb(" val) (read-rgb val))
 					(t (throw "Unknown stroke/fill style !" val))))))
 		(("stroke-linecap")
 			(case val
@@ -253,7 +263,7 @@
 				("evenodd" +winding_odd_even)
 				(t (throw "Unknown fill-rule !" val))))
 		("d"
-			(gen-svg-path val))
+			(read-path val))
 		(t  val)))
 
 (defun push-attributes (stack keys vals)
@@ -269,15 +279,8 @@
 	entry)
 
 (defun path-fill-and-stroke (canvas entry paths)
-	(defq stroke_width (* 0.5 (. entry :find "stroke-width"))
-		fill (. entry :find "fill")
-		fill_rule (. entry :find "fill-rule")
-		fill_opacity (. entry :find "fill-opacity")
-		stroke (. entry :find "stroke")
-		stroke_opacity (. entry :find "stroke-opacity")
-		stroke_linecap (. entry :find "stroke-linecap")
-		stroke_linejoin (. entry :find "stroke-linejoin")
-		transform (. entry :find "transform"))
+	(bind '(stroke fill stroke_width stroke_linecap stroke_linejoin
+			fill_rule fill_opacity stroke_opacity transform &rest _) (get :vals entry))
 	(when (and (/= fill 0) (/= fill_opacity 0.0))
 		(.-> canvas
 			(:set_color (+ (<< (n2i (* fill_opacity 0xff.0)) 24) (logand fill 0xffffff)))
@@ -292,11 +295,11 @@
 					(reduce (lambda (l (f p))
 						(cond
 							(f  ;closed
-								(bind '(p1 p2) (path-stroke-polygon p stroke_width +eps
+								(bind '(p1 p2) (path-stroke-polygon p (* 0.5 stroke_width) +eps
 									stroke_linejoin))
 								(push l p1 p2))
 							(t  ;open
-								(push l (path-stroke-polyline p stroke_width +eps
+								(push l (path-stroke-polyline p (* 0.5 stroke_width) +eps
 									stroke_linejoin stroke_linecap stroke_linecap)))))
 							paths (list)))))))
 
@@ -305,6 +308,7 @@
 	(setd scale 1)
 	(defq canvas nil stack
 		(list (lmap-kv
+			;this block of defaults are in order !
 			"stroke" 0
 			"fill" +argb_black
 			"stroke-width" 1.0
@@ -314,13 +318,13 @@
 			"fill-opacity" 1.0
 			"stroke-opacity" 1.0
 			"transform" (list (n2f scale) 0.0 0.0 (n2f scale) 0.0 0.0)
+			;this block can be any order
 			"x" 0.0 "y" 0.0 "x1" 0.0 "y1" 0.0 "x2" 0.0 "y2" 0.0
 			"cx" 0.0 "cy" 0.0 "r" 0.0
 			"d" (path) "points" (path)
 			)))
 	(XML-parse stream
 		(lambda (command keys vals)
-;           (prin "open: " command " " keys " " vals)(print)
 			(case command
 				("svg"
 					(defq entry (push-attributes stack keys vals) width 256 height 256)
