@@ -3243,7 +3243,7 @@
 ### path-gen-paths
 
 ```code
-(path-gen-paths svg_d) -> (list (nil|t path) ...)
+(path-gen-paths svg_d tol) -> (list (nil|t path) ...)
 ```
 
 ### path-gen-quadratic
@@ -4282,6 +4282,12 @@
 
 ```code
 (xmap-kv [key val ...]) -> xmap
+```
+
+### xml-parse
+
+```code
+(xml-parse stream)
 ```
 
 ### xset
