@@ -8,13 +8,13 @@
 
 (def-func 'lib/xml/parse)
 	;inputs
-	;r0 = lisp object (ptr)
-	;r1 = args list object (ptr)
+	;:r0 = lisp object (ptr)
+	;:r1 = args list object (ptr)
 	;outputs
-	;r0 = lisp object (ptr)
-	;r1 = return value object (ptr)
+	;:r0 = lisp object (ptr)
+	;:r1 = return value object (ptr)
 	;trashes
-	;r1-r14
+	;:r1-:r14
 
 	(def-vars
 		(int c)
@@ -48,21 +48,21 @@
 	(defun find_char_in (s)
 		(d-call 'str :find (cat s {,c}) '(_ _ :idx)))
 
-	(entry '(r0 r1))
+	(entry '(:r0 :r1))
 
 (errorcases
-	(call 'lisp :env_args_sig '(r1 ($ sig) 1) '(r2))
-	(gotoif '(r2 = 0) 'error))
+	(call 'lisp :env_args_sig '(:r1 ($ sig) 1) '(:r2))
+	(gotoif '(:r2 = 0) 'error))
 
 	(push-scope)
-	(assign '(r0 r1) {this, args})
+	(assign '(:r0 :r1) {this, args})
 
-	(list-bind-args r1 '(r0) '(:stream))
-	(assign '(r0) {stream})
+	(list-bind-args :r1 '(:r0) '(:stream))
+	(assign '(:r0) {stream})
 
 	(call 'list :create nil {resources})
-	(call 'str :create_from_buffer {0, str_gap} '(r0))
-	(call 'sstream :create '(r0) {sstoken})
+	(call 'str :create_from_buffer {0, str_gap} '(:r0))
+	(call 'sstream :create '(:r0) {sstoken})
 	(call 'list :create nil {states})
 	(call 'list :create nil {tokens})
 	(call 'str :create_from_buffer (list (cat (char +char_double_quote) {=<>}) 4) {not_symbol_chars})
@@ -70,21 +70,23 @@
 	(call 'str :create_from_buffer {">/-?", 4} {close_chars})
 
 	;create state symbols
-	(assign {$states, &syms_start, &syms_end} '(r11 r12 r13))
+	(vp-def (:table :iter_begin :iter_end) '(:r11 :r12 :r13))
+	(assign {$states, &syms_start, &syms_end} '(:table :iter_begin :iter_end))
 	(loop-start)
-		(call 'sym :intern_cstr '(r11) '((r12 0)))
-		(call 'sys_str :length '(r11) '(_ r1))
-		(vp-add-cr +ptr_size r12)
-		(vp-add-rr r1 r11)
-		(vp-add-cr 1 r11)
-	(loop-until '(r12 = r13))
+		(call 'sym :intern_cstr '(:table) `((,(get :iter_begin) 0)))
+		(call 'sys_str :length '(:table) '(_ :len))
+		(vp-add-cr +ptr_size :iter_begin)
+		(vp-add-rr :len :table)
+		(vp-add-cr 1 :table)
+	(loop-until '(:iter_begin = :iter_end))
 
 	;create resource tracker list
-	(assign {resources, &res_start, &res_end} '(r0 r13 r14))
+	(vp-def (:res :iter_begin :iter_end) '(:r0 :r12 :r13))
+	(assign {resources, &res_start, &res_end} '(:res :iter_begin :iter_end))
 	(loop-start)
-		(call 'list :push_back '(r0 (r13 0)) '(r0 _ _ _))
-		(vp-add-cr +ptr_size r13)
-	(loop-until '(r13 = r14))
+		(call 'list :push_back '(:res (:iter_begin 0)) '(:res _ _ _))
+		(vp-add-cr +ptr_size :iter_begin)
+	(loop-until '(:iter_begin = :iter_end))
 
 	(assign {sym_text} {state})
 	(loop-start 'next_char)
@@ -100,7 +102,7 @@
 				(goto 'write_token_then_next)
 			(default)
 				(find_char_in {close_chars})
-				(nextcaseif `(,(get :idx) = -1))
+				(nextcaseif '(:idx = -1))
 				(assign {sym_close} {state})
 				(goto 'write_token_then_next)
 			(vpcase {c = +char_equal})
@@ -116,16 +118,16 @@
 			(endswitch)
 		(vpcase {state = sym_open})
 			(find_char_in {open_chars})
-			(gotoif `(,(get :idx) /= -1) 'write_token_then_next)
+			(gotoif '(:idx /= -1) 'write_token_then_next)
 			(goto 'output_then_proc)
 		(vpcase {state = sym_close})
 			(find_char_in {close_chars})
-			(gotoif `(,(get :idx) /= -1) 'write_token_then_next)
+			(gotoif '(:idx /= -1) 'write_token_then_next)
 			(goto 'output_then_proc)
 		(vpcase {state = sym_symbol})
 			(gotoif {c <= +char_space} 'output_then_proc)
 			(find_char_in {not_symbol_chars})
-			(gotoif `(,(get :idx) = -1) 'write_token_then_next)
+			(gotoif '(:idx = -1) 'write_token_then_next)
 		(vp-label 'output_then_proc)
 			(output-token)
 			(output-state)
@@ -150,16 +152,16 @@
 	(return)
 
 (vp-label 'states)
-	(vp-string ":text")(vp-byte 0)
-	(vp-string ":open")(vp-byte 0)
-	(vp-string ":close")(vp-byte 0)
-	(vp-string ":assign")(vp-byte 0)
-	(vp-string ":string")(vp-byte 0)
-	(vp-string ":symbol")(vp-byte 0)
+	(vp-cstr ":text")
+	(vp-cstr ":open")
+	(vp-cstr ":close")
+	(vp-cstr ":assign")
+	(vp-cstr ":string")
+	(vp-cstr ":symbol")
 
 (errorcases
 (vp-label 'error)
-	(jump 'lisp :repl_error '(r0 "(xml-parse stream)" error_msg_wrong_types r1))
+	(jump 'lisp :repl_error '(:r0 "(xml-parse stream)" error_msg_wrong_types :r1))
 	(signature '(stream)))
 
 (def-func-end)
