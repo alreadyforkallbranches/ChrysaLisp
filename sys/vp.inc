@@ -63,15 +63,17 @@
 ; VP Instructions
 ;;;;;;;;;;;;;;;;;
 
-(each (# (defcvar %0 %0)) '(:r0 :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9 :r10 :r11 :r12 :r13 :r14 :rsp))
+(defq +vp_regs ''(:r0 :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9 :r10 :r11 :r12 :r13 :r14 :rsp)
+	+vp_regs_0_14 ''(:r0 :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9 :r10 :r11 :r12 :r13 :r14))
+(defun vpreg? (_) (find _ +vp_regs))
+(each (# (defcvar %0 %0)) +vp_regs)
 
 (defmacro vp-def (_ &optional l)
 	(if (> (length (defq v (filter (lambda (_)
 			(and (def? _ *compile_env*) (not (find _ *func_syms*)))) _))) 0)
 		(throw "VP redefine !" v))
-	(defq v '(:r0 :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9 :r10 :r11 :r12 :r13 :r14))
 	(setq l (apply cat (map (lambda (x y)
-		(list (list 'quote x) y)) _ (if l (merge-obj (cat (eval l)) v) v))))
+		(list (list 'quote x) y)) _ (if l (merge-obj (cat (eval l)) +vp_regs_0_14) +vp_regs_0_14))))
 	`(progn (defcvar ~l) (apply push (cat (list *func_syms*) ',_))))
 
 (defmacro type-sym (_)
@@ -80,8 +82,6 @@
 (defun vp-type-t (_)
 	(if (setq _ (find-rev (elem 0 _) "bBsSiI"))
 		(elem _ '(b ub s us i ui)) ""))
-
-(defun vpreg? (_) (find _ '(:r0 :r1 :r2 :r3 :r4 :r5 :r6 :r7 :r8 :r9 :r10 :r11 :r12 :r13 :r14 :rsp)))
 
 (defun vp-type (o)
 	(case (pop (type-of o))
@@ -151,31 +151,31 @@
 (defmacro vp-mem-ir (&optional _)
 	(setq _ (if _ (cat "-" _) ""))
 	`(defun ,(sym (cat "vp-cpy-ir" _)) (b i d)
-		(emit (list ',(sym (cat "emit-cpy-ir" _)) (get b) i (get d)))))
+		(emit (list ',(sym (cat "emit-cpy-ir" _)) (get b) (eval i) (get d)))))
 (defmacro vp-mem-ri (&optional _)
 	(setq _ (if _ (cat "-" _) ""))
 	`(defun ,(sym (cat "vp-cpy-ri" _)) (s b i)
-		(emit (list ',(sym (cat "emit-cpy-ri" _)) (get s) (get b) i))))
+		(emit (list ',(sym (cat "emit-cpy-ri" _)) (get s) (get b) (eval i)))))
 
 (defun vp-push (&rest b) (emit (cat '(emit-push) (map get b))))
 (defun vp-pop (&rest b) (emit (cat '(emit-pop) (map get b))))
 (defun vp-alloc (c) (emit (list 'emit-alloc c)))
 (defun vp-free (c) (emit (list 'emit-free c)))
-(defun vp-ret () (emit '(emit-ret)))
+(defun vp-ret () (emit (list 'emit-ret)))
 (defun vp-brk (&optional n) (emit (list 'emit-brk (opt n 0))))
 
 (defun vp-call-abi (r b i n x) (emit (cat (list 'emit-call-abi r b i n) x)))
 (defun vp-call (l) (emit (list 'emit-call (label-sym l))))
-(defun vp-call-r (d) (emit (list 'emit-call-r d)))
-(defun vp-call-i (b i) (emit (list 'emit-call-i b i)))
+(defun vp-call-r (d) (emit (list 'emit-call-r (get d))))
+(defun vp-call-i (b i) (emit (list 'emit-call-i (get b) (eval i))))
 (defun vp-call-p (l) (emit (list 'emit-call-p (label-sym l))))
 
 (defun vp-jmp (l) (emit (list 'emit-jmp (label-sym l) (dec (length (push *distance* 0))))))
-(defun vp-jmp-r (d) (emit (list 'emit-jmp-r d)))
-(defun vp-jmp-i (b i) (emit (list 'emit-jmp-i b i)))
+(defun vp-jmp-r (d) (emit (list 'emit-jmp-r (get d))))
+(defun vp-jmp-i (b i) (emit (list 'emit-jmp-i (get b) (eval i))))
 (defun vp-jmp-p (l) (emit (list 'emit-jmp-p (label-sym l))))
 
-(defun vp-lea-i (b i d) (emit (list 'emit-lea-i (get b) i (get d))))
+(defun vp-lea-i (b i d) (emit (list 'emit-lea-i (get b) (eval i) (get d))))
 (defun vp-lea-d (b i d) (emit (list 'emit-lea-d (get b) i (get d))))
 (defun vp-lea-p (l r) (emit (list 'emit-lea-p (label-sym l) (get r))))
 (defun vp-cpy-pr (l d) (emit (list 'emit-cpy-pr (label-sym l) (get d))))
