@@ -43,7 +43,7 @@
 		(eval *emit_list* *compile_env*)
 		(setq *out_buffer* (str *out_stream*) *pass* (inc *pass*))))
 
-(defun print-emit (_)
+(defun emit-print (_)
 	(and (list? _) (not (eql (elem 0 _) 'lambda)) (print _)))
 
 (defun emit-label (_)
@@ -137,7 +137,7 @@
 
 (defmacro vp-bcr (_)
 	`(defun ,(sym (cat "vp-" _ "-cr")) (c d l)
-		(emit (list 'emit-cmp-cr c (get d))
+		(emit (list 'emit-cmp-cr (eval c) (get d))
 			(list ',(sym (cat "emit-" _)) (label-sym l) (dec (length (push *distance* 0)))))))
 (defmacro vp-brr (_)
 	`(defun ,(sym (cat "vp-" _ "-rr")) (s d l)
@@ -172,6 +172,7 @@
 (defun vp-free (c) (emit (list 'emit-free (eval c))))
 (defun vp-ret () (emit (list 'emit-ret)))
 (defun vp-brk (&optional n) (emit (list 'emit-brk (opt n 0))))
+(defun vp-stack-init (s f x) (emit (list 'emit-stack-init (get s) (get f) (get x))))
 
 (defun vp-call-abi (r b i n x) (emit (cat (list 'emit-call-abi (get r) (get b) i n) (map get x))))
 (defun vp-call (l) (emit (list 'emit-call (label-sym l))))

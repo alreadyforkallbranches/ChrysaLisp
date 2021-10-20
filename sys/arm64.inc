@@ -8,21 +8,6 @@
 			:r16 :r17 :r18 :r19 :r20 :r21 :r22 :r23 :r24 :r25 :r26 :r27 :r28 :r29 :r30 :rsp)))
 (each (# (defcvar %0 %0)) '(:r15 :r16 :r17 :r18 :r19 :r20 :r21 :r22 :r23 :r24 :r25 :r26 :r27 :r28 :r29 :r30))
 
-(defun stack-init ()
-	(defq tk_state_size (* +ptr_size (length stack_state)))
-	(vp-and-cr (neg stack_align) :r1)
-	(vp-sub-cr tk_state_size :r1)
-	(f-bind 'sys_task :stop :r2)
-	(vp-cpy-ri :r4 :r1 (- tk_state_size +ptr_size))
-	(vp-cpy-ri :r2 :r1 (- tk_state_size (* +ptr_size 2)))
-	(vp-lea-p 'start :r4)
-	(vp-cpy-ri :r4 :r1 0)
-	(goto 'funcexit)
-(vp-label 'start)
-	(vp-cpy-rr :r1 :r30)
-	(vp-jmp-r :r0)
-(vp-label 'funcexit))
-
 (defmacro emit-ux (x s d)
 	`(emit-int (+ 0xd3400000 (<< ,x 10) (<< ,s 5) ,d)))
 
@@ -490,3 +475,30 @@
 (defun emit-free (c) (emit-add-cr (align c stack_align) (const (native-reg? :rsp))))
 (defun emit-ret () (emit-int 0xd65f03c0))
 (defun emit-brk (n))
+
+(defun emit-stack-init (s f x)
+	(defq tk_state_size (* +ptr_size (length stack_state)))
+	(emit-and-cr (neg stack_align) s)
+	(emit-sub-cr tk_state_size s)
+	(emit-cpy-ri f s (- tk_state_size +ptr_size))
+	(emit-cpy-ri x s (- tk_state_size (* +ptr_size 2)))
+	(emit-lea-p (defcvar (label-sym 'start) (+ *pc* 12)) f)
+	(emit-cpy-ri f s 0)
+	(emit-jmp (defcvar (label-sym 'funcexit) (+ *pc* 12)) 0)
+;start
+	(emit-cpy-rr s (const (native-reg? :r30)))
+	(emit-jmp-r (const (native-reg? :r0))))
+;funcexit
+
+(defun emit-call-abi (r b c n &rest x)
+	(setq x (cat `(,(native-reg? :r30)) x))
+	(apply emit-push x)
+	(emit-cpy-ir b c (const (native-reg? :r29)))
+	(emit-int (const (+ 0xd63f0000 (<< (native-reg? :r29) 5))))
+	(cond
+		((= 1 (defq l (length x)))
+			(emit-pop (const (native-reg? :r30))))
+		((= 2 l)
+			(emit-pop (const (native-reg? :r30)) (const (native-reg? :r29))))
+		(t  (emit-cpy-ir (const (native-reg? :rsp)) (* +ptr_size (dec l)) (const (native-reg? :r30)))
+			(emit-free (* +ptr_size l)))))
