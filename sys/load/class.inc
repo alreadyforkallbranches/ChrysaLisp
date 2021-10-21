@@ -1,4 +1,4 @@
-(include "sys/class.inc")
+(include "sys/pii/class.inc")
 (include "sys/abi.inc")
 
 ;;;;;;;;;;;;;;;;;;;

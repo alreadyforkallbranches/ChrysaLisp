@@ -1,5 +1,3 @@
-(include "sys/code.inc")
-
 ;;;;;;;;;;;;;;;;;;;;
 ; host abi call info
 ;;;;;;;;;;;;;;;;;;;;
@@ -33,17 +31,3 @@
 
 (defmacro abi-push-trashed (&rest b) (merge-obj b (abi-trashed)) `(vp-push ~b))
 (defmacro abi-pop-trashed (&rest b) (merge-obj b (abi-trashed)) `(vp-pop ~b))
-
-(def-enum +file_open 0
-	(enum read write append))
-
-(def-enum +mmap 0
-	(enum data exec shared none))
-
-(def-struct stat 0
-	(long mtime fsize)
-	(ushort mode))
-
-(defcvar 's_ifmt 0xf000)
-(defcvar 's_ifdir 0x4000)
-(defcvar 's_ifreg 0x8000)
