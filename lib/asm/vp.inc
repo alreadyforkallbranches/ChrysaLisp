@@ -23,24 +23,20 @@
 	`(push *emit_list* ~_))
 
 (defun emit-print (_)
-	(unless (eql (elem 0 _) 'lambda) (print _)))
+	(unless (eql (elem-get 0 _) 'lambda) (print _)))
 
 (defun emit-vp-code (emit_list)
-	;remove redundant labels and ops, plus rename labels
-	(defq out (push (clear '()) 'progn) labels (env 31)
-		last_e nil pc 0 pc_sym nil)
+	;remove redundant labels and rename
+	(defq out (push (clear '()) 'progn) labels (env 11)
+		last_e nil pc -1 pc_sym nil)
 	(each (lambda (op)
-		(defq e (elem 0 op))
-		(unless (eql e 'lambda)
+		(unless (eql (defq e (elem-get 0 op)) 'lambda)
 			(cond
 				((eql e 'emit-label)
-					(bind '(_ (_ label)) op)
-					(cond
-						((eql e last_e)
-							(def labels label pc_sym))
-						(t	(def labels label (setq pc_sym (sym (str "_" pc))))
-							(push out op)
-							(setq pc (inc pc)))))
+					(unless (eql e last_e)
+						(setq pc_sym (sym (str "_" (setq pc (inc pc)))))
+						(push out op))
+					(def labels (elem-get -2 (elem-get -2 op)) pc_sym))
 				((push out op))))
 		(setq last_e e)) emit_list)
 	(walk-list out
@@ -64,28 +60,26 @@
 (defmacro type-sym (_) `(sym (str ,_ "_t")))
 
 (defun vp-type-t (_)
-	(if (setq _ (find-rev (elem 0 _) "bBsSiI"))
-		(elem _ '(b ub s us i ui)) ""))
+	(if (setq _ (find-rev (elem-get 0 _) "bBsSiI"))
+		(elem-get _ '(b ub s us i ui)) ""))
 
 (defun vp-type (o)
 	(case (pop (type-of o))
 		(:sym
 			(cond
 				((vp-reg? o) :r)
-				((eql (elem 0 o) ":") :k)
+				((eql (elem-get 0 o) ":") :k)
 				(t :c)))
 		(:num :c)
 		(:list
-			(defq i (elem 0 o))
 			(cond
-				((vp-reg? i)
-					(setq i (elem 1 o))
+				((vp-reg? (defq i (elem-get 0 o)))
 					(cond
-						((vp-reg? i)
+						((vp-reg? (defq i (elem-get 1 o)))
 							(if (= 2 (length o)) :d
-								(sym (cat :d (elem 2 o)))))
+								(sym (cat :d (elem-get 2 o)))))
 						((/= 2 (length o))
-							(sym (cat :i (elem 2 o))))
+							(sym (cat :i (elem-get 2 o))))
 						((num? i) :i)
 						((setq i (get (type-sym i)))
 							(sym (cat :i (vp-type-t i))))
@@ -93,8 +87,8 @@
 				((eql i '@) :@)
 				((eql i '$) :$)
 				((eql i '&)
-					(if (vp-reg? (elem 1 o))
-						(if (vp-reg? (elem 2 o)) :&d :&i) nil))
+					(if (vp-reg? (elem-get 1 o))
+						(if (vp-reg? (elem-get 2 o)) :&d :&i) nil))
 				(t :c)))
 		(:str :s)
 		(t nil)))
@@ -160,7 +154,7 @@
 (defun vp-jmp-p (l) (emit (list 'emit-jmp-p (label-sym l))))
 
 (defun vp-lea-i (b i d) (emit (list 'emit-lea-i (get b) (eval i) (get d))))
-(defun vp-lea-d (b i d) (emit (list 'emit-lea-d (get b) i (get d))))
+(defun vp-lea-d (b i d) (emit (list 'emit-lea-d (get b) (get i) (get d))))
 (defun vp-lea-p (l r) (emit (list 'emit-lea-p (label-sym l) (get r))))
 (defun vp-cpy-pr (l d) (emit (list 'emit-cpy-pr (label-sym l) (get d))))
 

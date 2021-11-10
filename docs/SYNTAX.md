@@ -966,22 +966,10 @@
 (. syntax :compress_tabs string tab_width) -> string
 ```
 
-### syntax :get_state
-
-```code
-(. syntax :get_state) -> state
-```
-
 ### syntax :set_colors
 
 ```code
 (. syntax :set_colors fmap) -> syntax
-```
-
-### syntax :set_state
-
-```code
-(. syntax :set_state state) -> syntax
 ```
 
 ### syntax :text_flow
@@ -1410,6 +1398,12 @@
 (. xmap :empty) -> xmap
 ```
 
+### xmap :empty?
+
+```code
+(. xmap :empty?) -> t | nil
+```
+
 ### xmap :erase
 
 ```code
@@ -1468,6 +1462,12 @@
 
 ```code
 (. xset :empty) -> xset
+```
+
+### xset :empty?
+
+```code
+(. xset :empty?) -> t | nil
 ```
 
 ### xset :erase
@@ -2190,6 +2190,12 @@
 (deffimethod name ffi)
 ```
 
+### defgetmethod
+
+```code
+(defgetmethod field)
+```
+
 ### defmethod
 
 ```code
@@ -2202,10 +2208,34 @@
 (defq var val [var val] ...)
 ```
 
+### defsetmethod
+
+```code
+(defsetmethod field)
+```
+
 ### defun
 
 ```code
 (defun name ([arg ...]) body)
+```
+
+### dim
+
+```code
+(dim nums array)
+```
+
+### dim-get
+
+```code
+(dim-get nums dim)
+```
+
+### dim-set
+
+```code
+(dim-set nums dim form)
 ```
 
 ### drop!
@@ -2250,16 +2280,16 @@
 (each-rev lambda seq ...)
 ```
 
-### elem
+### elem-get
 
 ```code
-(elem index seq)
+(elem-get index seq)
 ```
 
 ### elem-set
 
 ```code
-(elem-set index list val)
+(elem-set index array val)
 ```
 
 ### emap

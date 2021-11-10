@@ -59,14 +59,8 @@
 			pbyte pubyte pshort pushort pint puint plong pulong pptr
 			nodeid netid offset enum bit))
 
-	(defmethod :set_state (this state)
-		; (. syntax :set_state state) -> syntax
-		(lower :state)
-		this)
-
-	(defmethod :get_state (this)
-		; (. syntax :get_state) -> state
-		(get :state this))
+	(defgetmethod state)
+	(defsetmethod state)
 
 	(defmethod :set_colors (this colors)
 		; (. syntax :set_colors fmap) -> syntax
@@ -87,7 +81,7 @@
 							((defq _ (find-rev c (const (cat (ascii-char 34) "{:;"))))
 								(push state_list state)
 								(push token_list token)
-								(setq token (list c) state (elem _ '(:string1 :string2 :keysym :comment))))
+								(setq token (list c) state (elem-get _ '(:string1 :string2 :keysym :comment))))
 							((is-number-char? c)
 								(push state_list state)
 								(push token_list token)
@@ -144,13 +138,13 @@
 						((defq ink (get (sym (apply cat token)) (get :keywords this)))
 							;present in keyword map
 							(push col_list ink))
-						((eql (elem 0 token) "+")
+						((eql (elem-get 0 token) "+")
 							;is a constant symbol
 							(push col_list (get :ink_constants this)))
-						((eql (elem 0 token) "*")
+						((eql (elem-get 0 token) "*")
 							;is a global symbol
 							(push col_list (get :ink_globals this)))
-						((eql (elem 0 token) "-")
+						((eql (elem-get 0 token) "-")
 							;is a negative number
 							(push col_list (get :ink_numbers this)))
 						(t  ;default text color)
