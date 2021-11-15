@@ -11,7 +11,14 @@
 
 (defq +via_vectors (const-quoted
 	'(list (list (Node 0 0 -1) (Node 0 0 1)) (list (Node 0 0 -1) (Node 0 0 1))))
-	+spacial_hash_res 8.0 +path_scale 1)
+	+spacial_hash_res 8.0 +path_scale 1 +node_sets ''())
+
+(defun alloc-node-set ()
+	(unless (defq ns (pop +node_sets))
+		(defq ns (fset 11))) ns)
+
+(defun free-node-set (ns)
+	(push +node_sets (. ns :empty)))
 
 (defun gen-vectors (vec_range x_range y_range)
 	;generate range of routing vectors
@@ -82,7 +89,7 @@
 		:pad_lines (defq pad_lines (list))
 		:pad_end_nodes (defq pad_end_nodes (list))
 		:wire_lines (defq wire_lines (list))
-		:wire_nodes (defq wire_nodes (fset 11)))
+		:wire_nodes (defq wire_nodes (alloc-node-set)))
 
 	;scale pads and wires for resolution of grid
 	(each (lambda (p)
@@ -290,7 +297,7 @@
 		;backtrack path from ends to starts
 		(raise :pcb)
 		(defq path_vectors (. pcb :get_path_vectors)
-			nearer_nodes (list) pth (list) path_node end_node exit nil)
+			nearer_nodes '() pth (list) path_node end_node exit nil)
 		(until exit
 			(task-slice)
 			(push pth path_node)
@@ -356,25 +363,25 @@
 		; (. net :print_net stream) -> net
 		;output net, pads, wires and paths, for viewer app
 		(raise :pcb :pads :wires :paths :id :radius :via :gap)
-		(defq scale (recip (n2f (. pcb :get_resolution))))
-		(write-line stream ";NET")
+		(defq scale (recip (n2f (. pcb :get_resolution))) verbosity (. pcb :get_verbosity))
+		(if (>= verbosity 2) (write-line stream ";NET"))
 		(write-line stream "(")
-		(write-line stream " ;id, radius, via, gap")
+		(if (>= verbosity 2) (write-line stream " ;id, radius, via, gap"))
 		(write-line stream (str " " id " " (* radius scale) " " (* via scale) " " (* gap scale)))
-		(write-line stream " ;PADS")
+		(if (>= verbosity 2) (write-line stream " ;PADS"))
 		(write-line stream " (")
 		(each (lambda (p)
-				(write-line stream "  ;PAD")
+				(if (>= verbosity 2) (write-line stream "  ;PAD"))
 				(write-line stream "  (")
-				(write-line stream "   ;radius, gap")
+				(if (>= verbosity 2) (write-line stream "   ;radius, gap"))
 				(write-line stream (str "   "
 					(* (. p :get_radius) scale) " "
 					(* (. p :get_gap) scale)))
-				(write-line stream "   ;pos")
+				(if (>= verbosity 2) (write-line stream "   ;pos"))
 				(bind '(x y z) (. p :get_pos))
 				(write-line stream (str "   ("
 					(* x scale) " " (* y scale) " " z ")"))
-				(write-line stream "   ;shape")
+				(if (>= verbosity 2) (write-line stream "   ;shape"))
 				(write stream "   (")
 				(each (lambda (p)
 						(write stream (str (vec-scale p scale))))
@@ -383,10 +390,10 @@
 				(write-line stream "  )"))
 			pads)
 		(write-line stream " )")
-		(write-line stream " ;WIRES")
+		(if (>= verbosity 2) (write-line stream " ;WIRES"))
 		(write-line stream " (")
 		(each (lambda (wire)
-				(write-line stream "  ;WIRE")
+				(if (>= verbosity 2) (write-line stream "  ;WIRE"))
 				(write stream "  (")
 				(each (lambda (p)
 						(bind '(x y z) p)
@@ -395,10 +402,10 @@
 				(write-line stream ")"))
 			wires)
 		(write-line stream " )")
-		(write-line stream " ;PATHS")
+		(if (>= verbosity 2) (write-line stream " ;PATHS"))
 		(write-line stream " (")
 		(each (lambda (pth)
-				(write-line stream "  ;PATH")
+				(if (>= verbosity 2) (write-line stream "  ;PATH"))
 				(write stream "  (")
 				(each (lambda (p)
 						(bind '(x y z) (. pcb :node_to_pad_point p))
@@ -525,28 +532,31 @@
 		; (. pcb :mark_distances radius via gap starts ends) -> pcb
 		;generate all grid points surrounding node that are not shorting with an existing track
 		(raise :flood_vectors :viascost)
-		(defq distance 1 frontier starts vias_nodes (lmap) exit t)
-		(while (and exit (or (not (. vias_nodes :empty?)) (not (. frontier :empty?))))
+		(defq distance 1 vias_map (const-quoted (fmap 11))
+			frontier (. starts :copy) exit t)
+		(while (and exit (or (not (. vias_map :empty?)) (not (. frontier :empty?))))
 			(task-slice)
 			(. frontier :each (# (. this :set_node %0 distance)))
 			(cond
 				((every (# (/= (. this :get_node %0) 0)) ends)
 					(setq exit nil))
-				(t  (defq new_nodes (fset 3) vias_start (+ distance viascost))
+				(t  (defq ns (alloc-node-set) vias_start (+ distance viascost))
 					(. frontier :each (lambda (node)
-						(each (# (. new_nodes :insert %0))
+						(each (# (. ns :insert %0))
 							(. this :all_not_shorting
 								(. this :all_not_marked flood_vectors node) node radius gap))
-						(each (lambda (new_node)
-								(unless (defq node_set (. vias_nodes :find vias_start))
-									(. vias_nodes :insert vias_start (defq node_set (fset 11))))
-								(. node_set :insert new_node))
-							(. this :all_not_shorting_via
-								(. this :all_not_marked +via_vectors node) node via gap))))
-					(when (defq delay_nodes (. vias_nodes :find distance))
-						(. delay_nodes :each (# (if (= (. this :get_node %0) 0) (. new_nodes :insert %0))))
-						(. vias_nodes :erase distance))
-					(setq frontier new_nodes distance (inc distance)))))
+						(when (/= 0 (length (defq nv (. this :all_not_shorting_via
+									(. this :all_not_marked +via_vectors node) node via gap))))
+							(unless (defq vns (. vias_map :find vias_start))
+								(. vias_map :insert vias_start (defq vns (alloc-node-set))))
+							(each (# (. vns :insert %0)) nv))))
+					(when (defq delay_nodes (. vias_map :find distance))
+						(. delay_nodes :each (# (if (= (. this :get_node %0) 0) (. ns :insert %0))))
+						(free-node-set delay_nodes)
+						(. vias_map :erase distance))
+					(free-node-set frontier)
+					(setq frontier ns distance (inc distance)))))
+		(.-> vias_map (:each (lambda (k v) (free-node-set v))) :empty)
 		this)
 
 	(defmethod :unmark_distances (this)
@@ -598,7 +608,7 @@
 		(raise :netlist)
 		(.-> this :remove_netlist :unmark_distances :reset_areas :shuffle_netlist)
 		(sort-netlist netlist)
-		(defq hoisted_nets (fset) index 0 exit t retval t start_time (pii-time))
+		(defq hoisted_nets (fset) index 0 exit t retval t)
 		(while (and exit (not (mail-poll select)) (< index (length netlist)))
 			(task-slice)
 			(defq net (elem-get index netlist))
@@ -628,7 +638,6 @@
 							(while (> index pos)
 								(. (elem-get index netlist) :remove)
 								(setq index (dec index)))))))
-			(defq end_time (pii-time) elapsed (- end_time start_time))
 			(when (>= (. this :get_verbosity) 1)
 				(defq ss (string-stream (cat "")))
 				(. this :print_pcb ss)
@@ -666,10 +675,10 @@
 	(defmethod :print_pcb (this stream)
 		; (. pcb :print_pcb stream) -> pcb
 		;output board state for viewer app
-		(raise :width :height :depth :resolution)
-		(write-line stream ";PCB")
+		(raise :width :height :depth :resolution :verbosity)
+		(if (>= verbosity 2) (write-line stream ";PCB"))
 		(write-line stream "(")
-		(write-line stream " ;width, height, depth")
+		(if (>= verbosity 2) (write-line stream " ;width, height, depth"))
 		(write-line stream (str " (" (/ width resolution) " " (/ height resolution) " " depth ")"))
 		(each (# (. %0 :print_net stream)) (get :netlist this))
 		(write-line stream ")")
