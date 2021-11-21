@@ -1,9 +1,7 @@
 (import "sys/lisp.inc")
 (import "class/lisp.inc")
 (import "gui/lisp.inc")
-
 ;(import "lib/debug/frames.inc")
-
 (import "./app.inc")
 (import "./reader.inc")
 (import "./viewer.inc")
@@ -15,7 +13,7 @@
 	(enum show_all show_1 show_2 show_3 show_4))
 
 (enums +select 0
-	(enum main reply tip))
+	(enum main reply prog tip))
 
 (defun all-pcbs (p)
 	(defq out (list))
@@ -56,6 +54,7 @@
 		(ui-label _ (:text "odd_range:" :min_width +tag_min_size :flow_flags +flow_flag_align_hright))
 		(. (ui-spinner odd_spinner (:value 1 :maximum 2 :minimum 1))
 			:connect +event_odd_spinner))
+	(ui-progress progress (:value 100 :maximum 100))
 	(ui-scroll pcb_scroll +scroll_flag_both (:min_width 512 :min_height 256)))
 
 (defun win-load (_)
@@ -101,7 +100,8 @@
 			(+job_flood_range *flood_range*)
 			(+job_even_range *even_range*)
 			(+job_odd_range *odd_range*)
-			(+job_reply (elem-get +select_reply select)))))
+			(+job_reply (elem-get +select_reply select))
+			(+job_prog (elem-get +select_prog select)))))
 
 ;import actions and bindings
 (import "./actions.inc")
@@ -125,6 +125,11 @@
 				;tip time mail
 				(if (defq view (. *window* :find_id (getf *msg* +mail_timeout_id)))
 					(. view :show_tip)))
+			((= idx +select_prog)
+				;progress report mail
+				(set progress :value (getf *msg* +progress_current)
+					:maximum (getf *msg* +progress_total))
+				(. progress :dirty))
 			;must be gui event to main mailbox
 			((defq *id* (getf *msg* +ev_msg_target_id) action (. event_map :find *id*))
 				;call bound event action
