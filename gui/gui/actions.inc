@@ -72,7 +72,7 @@
 (defun action-mouse-button-up ()
 	(setq *mouse_x* (getf msg +sdl_mouse_button_event_x)
 		*mouse_y* (getf msg +sdl_mouse_button_event_y)
-		*mouse_buttons* (logxor *mouse_buttons* (getf msg +sdl_mouse_button_event_button)))
+		*mouse_buttons* (logand *mouse_buttons* (lognot (getf msg +sdl_mouse_button_event_button))))
 	(and (defq view (. *screen* :find_id *mouse_id*))
 		(defq owner (. view :find_owner))
 		(mail-send owner (setf-> (str-alloc +ev_msg_mouse_size)
@@ -122,8 +122,8 @@
 			(. *screen* :set_flags +view_flag_dirty_all +view_flag_dirty_all))))
 
 (defun action-quit ()
-	;nil soon...
-	(setq *running* t))
+	;:nil soon...
+	(setq *running* :t))
 
 (defq event_map (fmap-kv
 	+SDL_MOUSEWHEEL action-mouse-wheel

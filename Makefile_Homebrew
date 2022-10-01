@@ -11,7 +11,6 @@ CXXFLAGS += -MMD
 
 OS := $(shell uname)
 CPU := $(shell uname -m)
-DTZ := $(shell date "+%Z")
 ifeq ($(CPU),x86_64)
 ABI := AMD64
 else
@@ -19,30 +18,15 @@ CPU := aarch64
 ABI := ARM64
 endif
 
-all:		.hostenv tui gui
-gui:		.hostenv obj/$(CPU)/$(ABI)/$(OS)/main_gui
-tui:		.hostenv obj/$(CPU)/$(ABI)/$(OS)/main_tui
-install:	clean .hostenv tui gui inst
+all:		hostenv tui gui
+gui:		hostenv obj/$(CPU)/$(ABI)/$(OS)/main_gui
+tui:		hostenv obj/$(CPU)/$(ABI)/$(OS)/main_tui
+install:	clean hostenv tui gui inst
 
-.hostenv:
-ifeq ($(OS), Windows)
-	@echo "USER=%USERNAME%" > .hostenv
-	@echo "HOME=%HOMEPATH%" >> .hostenv
-	@echo "PWD=%CD%" >> .hostenv
-else
-	@echo "USER=$(USER)" > .hostenv
-	@echo "HOME=$(HOME)" >> .hostenv
-	@echo "PWD=$(PWD)" >> .hostenv
-endif
+hostenv:
 	@echo $(CPU) > arch
 	@echo $(OS) > platform
 	@echo $(ABI) > abi
-	@echo "ROOT=$(PWD)" >> .hostenv
-	@echo "HE_VER=2" >> .hostenv
-	@echo "OS=$(OS)" >> .hostenv
-	@echo "CPU=$(CPU)" >> .hostenv
-	@echo "ABI=$(ABI)" >> .hostenv
-	@echo "TZ=$(DTZ)" >> .hostenv
 
 snapshot:
 	rm -f snapshot.zip
@@ -123,10 +107,8 @@ ifeq ($(OS),Linux)
 endif
 
 clean:
-	rm -f .hostenv
 	rm -rf $(OBJ_DIR_GUI)/*
 	rm -rf $(OBJ_DIR_TUI)/*
-	rm -rf obj/
 	unzip -nq snapshot.zip
 
  -include $(OBJ_FILES_GUI:.o=.d)

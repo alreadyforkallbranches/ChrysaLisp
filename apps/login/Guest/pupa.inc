@@ -30,8 +30,8 @@
 (defq *env_terminal_prompt* (cat *env_user* "> ") *env_terminal_lines* 1000)
 
 ;timezones must be locations not abbreviations. See lib/date/date.inc for more info.
-(defq *env_clock_timezone* "Etc/GMT" *env_clock_analog* t *env_clock_digital* t
-	*env_clock_twelve_hour* t  *env_clock_seconds* t  *env_clock_pad_hour* nil *env_clock_dotw* t)
+(defq *env_clock_timezone* "Etc/GMT" *env_clock_analog* :t *env_clock_digital* :t
+	*env_clock_twelve_hour* :t  *env_clock_seconds* :t  *env_clock_pad_hour* :nil *env_clock_dotw* :t)
 
 ;widget property defaults
 (ffi create-font "gui/font/lisp_create" 0)
@@ -39,7 +39,7 @@
 	*env_toolbar_col* 0xffc0c0c0 *env_toolbar2_col* 0xffa0a0a0 *env_ink_col* 0xff000000
 	*env_backdrop_ink_col* 0xff101010 *env_backdrop_col* 0xff202020
 	*env_hint_col* 0xffb0b0b0 *env_no_hint_col* *env_ink_col* *env_radio_col* 0xffe0e0e0
-	*env_window_border* 2 *env_window_shadow* 5 *env_label_border* 0 *env_button_border* 1
+	*env_window_border* 1 *env_window_shadow* 5 *env_label_border* 0 *env_button_border* 1
 	*env_textfield_border* -1 *env_title_border* 1 *env_title_buttons_border* 1
 	*env_window_font* (create-font "fonts/OpenSans-Regular.ctf" 18)
 	*env_title_font* (create-font "fonts/OpenSans-Regular.ctf" 20)

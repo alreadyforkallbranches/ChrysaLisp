@@ -4,6 +4,25 @@
 
 ------
 
+Remove unsupported source. Available in the repo history if folks want to dig
+around.
+
+------
+
+I'm currently dealing with an ongoing medical emergency, not myself, but family
+member. So things may be a bit quiet for a while. But the project is not dead,
+just in slow mode until life gets back to normality.
+
+Update: My partner and love of my life died suddenly after a fight with Acute
+Leukemia, I will forever miss her. I will get back to the project, but can't
+give a date yet. Please bare with me till normal life can resume. Thanks.
+
+Update: Life just won't stop kicking at the moment. A few weeks after my
+partner died, my sisters husband has died in circumstances that have lead to a
+lengthy inquest. My focus is my sister at this time, thank you.
+
+------
+
 Rename `(elem)` to `(elem-get)`, will now be inline with new `(dim-get)` and
 `(dim-set)` multi dimensional element get and set functions.
 
@@ -230,7 +249,7 @@ Tool tips experiment in the Editor.
 
 Mouse wheel support added across the GUI. Apps and Scroll widget.
 
-New `(.?)` macro. Returns `nil` if not callable else the bound method lambda.
+New `(.?)` macro. Returns `:nil` if not callable else the bound method lambda.
 
 GUI event loop moved out to Lisp. And move the SDL event queue handling out to
 Lisp !
@@ -345,7 +364,7 @@ like other the other time functions. As we are no longer using SDL sleep call.
 Changed the install network to a 3x3 mesh to not overload the Raspberry PI.
 
 Textfield widget now has :clear_text property. This is mapped to :text property
-depending on the value of a :mode (nil | t) property.
+depending on the value of a :mode (:nil | :t) property.
 
 Implemented `(if ...)` in VP code ! Nice performance boost across the system.
 
@@ -417,12 +436,6 @@ and is showing the fastest benchmark times of any current platform. Under 0.2
 second full build time on the MacBook Air !
 
 ------
-
-New `lib/clenv/clenv.inc` library for accessing `.hostenv` variable
-assignments.
-
-Updates to `apps/terminal/tui2.lisp` and `lib/collections/xnode.inc`to increase
-shell functionality.
 
 `(stream-seek)` and `(pii-fstat)` support. `(age)` now just a wrapper to
 `(pii-fstat)`
@@ -657,7 +670,7 @@ this addition.
 eg.
 ```code
 (map (# (< %0 0)) '(1 2 3 4 5 6 -6 -7 -8 0 7))
-(nil nil nil nil nil nil t t t nil nil)
+(:nil :nil :nil :nil :nil :nil :t :t :t :nil :nil)
 ```
 
 Anaphoric macros have moved over to the lib/ folder.
@@ -1063,8 +1076,8 @@ mode and deinit uses it to clear up all outstanding ack messages.
 Rework the assembler to not use (pipe) and open a farm of children that send
 results back via (stream-msg-out) streams. Significantly faster !
 
-(catch) now sets the _ symbol to the string forma of the thrown error for use
-by the eform.
+(catch) now sets the _ symbol to the string form of the thrown error for use by
+the eform.
 
 ------
 
@@ -1115,7 +1128,7 @@ trim the snapshot.zip file of the empty folders.
 
 ------
 
-Removed sys_mail::trymail and sys_mail::tryread. Broke out sys_mail::poll from
+Removed sys_mail:trymail and sys_mail:tryread. Broke out sys_mail::poll from
 sys_mail::select and standardised on this way of polling an array of mailboxes.
 Made the API directly compatible with Lisp apps....
 
@@ -1165,7 +1178,7 @@ the target id array if required so saving a small amount of RAM.
 
 Fixed a silly memory leak in the Windows main.c myunmap function.
 
-Finally implemented the view::hide and view::to_back methods with a minimal
+Finally implemented the view::hide and view:to_back methods with a minimal
 redraw, title drag with the right button now does a to_back and drag.
 
 Added a Freeball demo to thrash the sprite compositing. This shows that you
@@ -1463,7 +1476,7 @@ BannanaEarwig.
 ------
 
 Happy now with the polygon and stroking APIs after playing around with the new
-analogue clock face demo. Makes a real difference the the flow of the source
+analogue clock face demo. Makes a real difference to the flow of the source
 code after rearranging the parameter ordering.
 
 ------

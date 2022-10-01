@@ -141,7 +141,7 @@ Usage: split [options]
 	options:
 		-h --help: this help info.
 		-s --sep separator: default ,.
-		-e --sel num: selected element, default nil.
+		-e --sel num: selected element, default :nil.
 	Split the lines from stdin to stdout.
 	Optionaly select a specific element of
 	the split.
@@ -192,20 +192,5 @@ Usage: usb [options]
 		-h --help: this help info.
 		-c --count num: default 1.
 	Start USB link driver/s.
-
-```
-## wc
-```code
-
-Usage: wc [-h] [-v] [-f :file] [-l] [-w] [-c]
-
-Details:
-
-        -h   - displays help and exits
-        -v   - displays app version and exits
-        -f   - file to summarize (default: stdin)
-        -l   - include line count in summary (default: nil)
-        -w   - include word count in summary (default: nil)
-        -c   - include character count in summary (default: nil)
 
 ```

@@ -18,8 +18,8 @@
 	+shadow_softness 64.0
 	+attenuation 0.05
 	+ambient 0.05
-	+ref_coef 0.25
-	+ref_depth 1
+	+ref_coef 0.3
+	+ref_depth 2
 	+light_pos (fixeds -0.1 -0.1 -3.0))
 
 ;field equation for a sphere
@@ -84,7 +84,7 @@
 (defun scene-ray (ray_origin ray_dir)
 	(defq l (ray-march ray_origin ray_dir 0.0 +clipfar +min_distance +march_factor))
 	(if (>= l +clipfar)
-		(const (cat +fixeds_tmp3))
+		(const (cat +fixeds_zero3))
 		(progn
 			;difuse lighting
 			(defq surface_pos (vec-add ray_origin (vec-scale ray_dir l +fixeds_tmp3))
@@ -120,14 +120,14 @@
 	(mail-send mbox (str reply)))
 
 (defun main ()
-	(defq select (alloc-select +select_size) running t +timeout 5000000)
+	(defq select (alloc-select +select_size) running :t +timeout 5000000)
 	(while running
 		(mail-timeout (elem-get +select_timeout select) +timeout 0)
 		(defq msg (mail-read (elem-get (defq idx (mail-select select)) select)))
 		(cond
 			((or (= idx +select_timeout) (eql msg ""))
 				;timeout or quit
-				(setq running nil))
+				(setq running :nil))
 			((= idx +select_main)
 				;main mailbox, reset timeout and reply with result
 				(mail-timeout (elem-get +select_timeout select) 0 0)
