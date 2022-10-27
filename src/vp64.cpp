@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <iostream>
+#include <atomic>
 #ifdef _WIN64
 	#include <immintrin.h>
 #endif
@@ -156,6 +157,7 @@ enum Opcodes
 	VP64_CALL_ABI,
 
 	VP64_RET,
+	VP64_SYNC,
 	VP64_BRK,
 };
 
@@ -309,6 +311,7 @@ std::string opcodeDesc[] = {
 	"VP64_CALL_ABI",
 
 	"VP64_RET",
+	"VP64_SYNC",
 	"VP64_BRK"
 };
 
@@ -319,6 +322,7 @@ int vp64(uint8_t* data, int64_t *stack, int64_t* argv, int64_t* host_os_funcs, i
 	int64_t ir;
 	int64_t compare1 = 0;
 	int64_t compare2 = 0;
+	std::atomic<int> sync;
 
 	// start at the beginning
 	fn_header* pHeader = (fn_header*)((uint8_t*)data);
@@ -1378,6 +1382,12 @@ int vp64(uint8_t* data, int64_t *stack, int64_t* argv, int64_t* host_os_funcs, i
 			{
 				pc = *(int16_t**)regs[15];
 				regs[15] += 8;
+			}
+			break;
+
+			case VP64_SYNC:
+			{
+				sync.store(ir >> 8, std::memory_order_seq_cst);
 			}
 			break;
 

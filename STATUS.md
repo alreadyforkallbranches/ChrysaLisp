@@ -7,6 +7,12 @@
 Remove unsupported source. Available in the repo history if folks want to dig
 around.
 
+Added new `(vp-sync c)` instruction for vp level memory barrier operations.
+Currently will only support operation 0 ie. full shared memory cores sync.
+
+Fix for Arm platforms task exit code ! After a `git pull` do a `make install`
+to rebuild your native image.
+
 ------
 
 I'm currently dealing with an ongoing medical emergency, not myself, but family
