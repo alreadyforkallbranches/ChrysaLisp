@@ -9,6 +9,7 @@
 
 (defun set-mouse-id ()
 	(bind '(view _ _) (. *screen* :hit_tree *mouse_x* *mouse_y*))
+	(unless view (setq view *screen*))
 	(when (/= (defq mouse_id (. view :get_id)) *mouse_id*)
 		(and (defq old_view (. *screen* :find_id *mouse_id*))
 			(defq owner (. old_view :find_owner))
