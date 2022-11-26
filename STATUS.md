@@ -13,6 +13,11 @@ Currently will only support operation 0 ie. full shared memory cores sync.
 Fix for Arm platforms task exit code ! After a `git pull` do a `make install`
 to rebuild your native image.
 
+Support for `+...` symbols as keys in `(case)` statements.
+
+New `(font-info font) -> (name size)` function. Returns the name and size in a
+list.
+
 ------
 
 I'm currently dealing with an ongoing medical emergency, not myself, but family
