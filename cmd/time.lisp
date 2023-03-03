@@ -15,12 +15,20 @@
 	(when (and
 			(defq stdio (create-stdio))
 			(defq args (options stdio usage)))
+		;get start time
 		(defq start (pii-time))
+		;pass it all through
 		(while (defq c (read-char (io-stream 'stdin)))
 			(write-char (io-stream 'stdout) c))
+		;get duration
+		(defq duration (- (pii-time) start))
 		(stream-flush (io-stream 'stdout))
-		(write (io-stream 'stderr)
-			(cat "Time:" (char 10)
-				(time-in-seconds (- (pii-time) start)) " seconds" (char 10)))
+		;wait for the stdout data to flow along...
 		(task-sleep 100000)
-		(stream-flush (io-stream 'stderr))))
+		(write (io-stream 'stderr)
+			(cat "Time:" (char 10) (time-in-seconds duration) " seconds" (char 10)))
+		(stream-flush (io-stream 'stderr))
+		;wait for the stderr data to flow along...
+		(task-sleep 100000)
+		;and now exit and send EOF along the pipe.
+		))
