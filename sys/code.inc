@@ -14,37 +14,32 @@
 (defmacro llb-sym (_) `(sym (cat "_b_" ,_)))
 (defmacro lle-sym (_) `(sym (cat "_e_" ,_)))
 
-(defmacro errorif (e l) (if (> *debug_mode* 0) (list 'gotoif e l)))
-(defmacro errorifnot (e l) (if (> *debug_mode* 0) (list 'gotoifnot e l)))
-(defmacro errorcases (&rest e) (if (> *debug_mode* 0) (cat '(progn) e)))
-(defmacro noterrorcases (&rest e) (if (<= *debug_mode* 0) (cat '(progn) e)))
-
 (defun goto (l)
 	(vp-jmp l))
 
 (defun gotoif (e l)
 	(bind '(d o s) (cond
 		((str? e) (assign e '(:r0)) '(:r0 /= 0))
-		((assign-map-reg-keys e))))
+		(e)))
 	(defq e (find-rev o '(= /= <= >= > <)))
-	(case (vp-type s)
+	(case (assign-src-type s)
 		(:c (if e ((eval (elem-get e '(vp-beq-cr vp-bne-cr vp-ble-cr vp-bge-cr vp-bgt-cr vp-blt-cr))) s d l)
 			(throw "No such comparator" o)))
 		(:r (if e ((eval (elem-get e '(vp-beq-rr vp-bne-rr vp-ble-rr vp-bge-rr vp-bgt-rr vp-blt-rr))) s d l)
 			(throw "No such comparator" o)))
-		(:t (throw "No such compare mode" (vp-type s)))))
+		(:t (throw "No such compare mode" (assign-src-type s)))))
 
 (defun gotoifnot (e l)
 	(bind '(d o s) (cond
 		((str? e) (assign e '(:r0)) '(:r0 /= 0))
-		((assign-map-reg-keys e))))
+		(e)))
 	(defq e (find-rev o '(/= = > < <= >=)))
-	(case (vp-type s)
+	(case (assign-src-type s)
 		(:c (if e ((eval (elem-get e '(vp-beq-cr vp-bne-cr vp-ble-cr vp-bge-cr vp-bgt-cr vp-blt-cr))) s d l)
 			(throw "No such comparator" o)))
 		(:r (if e ((eval (elem-get e '(vp-beq-rr vp-bne-rr vp-ble-rr vp-bge-rr vp-bgt-rr vp-blt-rr))) s d l)
 			(throw "No such comparator" o)))
-		(:t (throw "No such compare mode" (vp-type s)))))
+		(:t (throw "No such compare mode" (assign-src-type s)))))
 
 (defun switch (&optional _)
 	(push *switch_stk* *switch*)
@@ -176,6 +171,15 @@
 
 (defun endif ()
 	(endswitch))
+
+;;;;;;;;;;;
+; errorcase
+;;;;;;;;;;;
+
+(defmacro errorcases (&rest e) (if (> *debug_mode* 0) `(progn ~e)))
+(defmacro noterrorcases (&rest e) (if (<= *debug_mode* 0) `(progn ~e)))
+(defmacro errorif (e l) `(errorcases (gotoif ,e ,l)))
+(defmacro errorifnot (e l) `(errorcases (gotoifnot ,e ,l)))
 
 ;;;;;;;
 ; enums
